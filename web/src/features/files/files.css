@@ -1,0 +1,245 @@
+/* Studyh files feature (PDF/EPUB readers + import dropzone).
+   Design tokens mirror src/styles/app.css: #0f1115 / #1a1d24 / #7c9cff. */
+
+.files {
+  --files-bg: #0f1115;
+  --files-panel: #1a1d24;
+  --files-border: #2a2e38;
+  --files-fg: #e7eaf2;
+  --files-muted: #9aa1b2;
+  --files-accent: #7c9cff;
+  --files-danger: #ff7c7c;
+}
+
+.files-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.files-btn {
+  appearance: none;
+  border: 1px solid var(--files-border, #2a2e38);
+  background: var(--files-panel, #1a1d24);
+  color: var(--files-fg, #e7eaf2);
+  border-radius: 10px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 8px 14px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: border-color 120ms ease, color 120ms ease;
+}
+
+.files-btn:hover:not(:disabled) {
+  border-color: var(--files-accent, #7c9cff);
+  color: var(--files-accent, #7c9cff);
+}
+
+.files-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.files-pos {
+  color: var(--files-muted, #9aa1b2);
+  font-size: 0.85rem;
+  min-width: 110px;
+  text-align: center;
+}
+
+.files-loading,
+.files-error,
+.files-empty {
+  padding: 12px;
+  font-size: 0.9rem;
+}
+
+.files-loading {
+  color: var(--files-muted, #9aa1b2);
+}
+
+.files-error {
+  color: var(--files-danger, #ff7c7c);
+}
+
+.files-empty {
+  color: var(--files-muted, #9aa1b2);
+}
+
+/* ---------- PDF ---------- */
+
+.pdf-reader {
+  --files-bg: #0f1115;
+  --files-panel: #1a1d24;
+  --files-border: #2a2e38;
+  --files-fg: #e7eaf2;
+  --files-muted: #9aa1b2;
+  --files-accent: #7c9cff;
+  --files-danger: #ff7c7c;
+
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+  height: 100%;
+}
+
+.pdf-reader__stage {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  background: var(--files-panel);
+  border: 1px solid var(--files-border);
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.pdf-reader__page {
+  position: relative;
+  width: fit-content;
+  margin: 0 auto;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.4);
+}
+
+.pdf-reader__page canvas {
+  display: block;
+  background: #ffffff;
+}
+
+.pdf-reader__textlayer {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  line-height: 1;
+}
+
+.pdf-reader__textlayer span {
+  position: absolute;
+  color: transparent;
+  white-space: pre;
+  cursor: text;
+  transform-origin: 0 0;
+}
+
+.pdf-reader .files-loading,
+.pdf-reader .files-error {
+  text-align: center;
+}
+
+/* ---------- EPUB ---------- */
+
+.epub-reader {
+  --files-bg: #0f1115;
+  --files-panel: #1a1d24;
+  --files-border: #2a2e38;
+  --files-fg: #e7eaf2;
+  --files-muted: #9aa1b2;
+  --files-accent: #7c9cff;
+
+  --epub-page-bg: #1a1d24;
+  --epub-page-fg: #e7eaf2;
+  --epub-font-size: 17px;
+
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+  height: 100%;
+}
+
+.epub-reader[data-theme="light"] {
+  --epub-page-bg: #ffffff;
+  --epub-page-fg: #171a21;
+  --files-panel: #f2f3f7;
+  --files-fg: #171a21;
+  --files-muted: #61687a;
+  --files-border: #d5d8e1;
+}
+
+@media (prefers-color-scheme: light) {
+  .epub-reader[data-theme="automatic"] {
+    --epub-page-bg: #ffffff;
+    --epub-page-fg: #171a21;
+    --files-panel: #f2f3f7;
+    --files-fg: #171a21;
+    --files-muted: #61687a;
+    --files-border: #d5d8e1;
+  }
+}
+
+.epub-reader__content {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  background: var(--epub-page-bg);
+  color: var(--epub-page-fg);
+  font-size: var(--epub-font-size);
+  line-height: 1.65;
+  border-radius: 12px;
+  padding: 20px 22px;
+}
+
+.epub-reader__content h1,
+.epub-reader__content h2,
+.epub-reader__content h3 {
+  line-height: 1.25;
+  margin: 1em 0 0.5em;
+}
+
+.epub-reader__content p {
+  margin: 0 0 0.9em;
+}
+
+.epub-reader__controls {
+  justify-content: center;
+}
+
+.epub-reader__theme {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--files-muted);
+  font-size: 0.85rem;
+  min-height: 44px;
+}
+
+.epub-reader__theme select {
+  min-height: 44px;
+  border-radius: 10px;
+  border: 1px solid var(--files-border, #2a2e38);
+  background: var(--files-panel, #1a1d24);
+  color: var(--files-fg, #e7eaf2);
+  padding: 8px 10px;
+}
+
+/* ---------- Import dropzone ---------- */
+
+.files-dropzone {
+  border: 1.5px dashed var(--files-border, #2a2e38);
+  border-radius: 12px;
+  background: var(--files-bg, #0f1115);
+  color: var(--files-muted, #9aa1b2);
+  padding: 18px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 120ms ease, color 120ms ease;
+}
+
+.files-dropzone:hover,
+.files-dropzone.is-over {
+  border-color: var(--files-accent, #7c9cff);
+  color: var(--files-accent, #7c9cff);
+}
+
+.files-dropzone strong {
+  display: block;
+  color: inherit;
+  margin-bottom: 4px;
+}
+
+.files-dropzone small {
+  font-size: 0.78rem;
+}

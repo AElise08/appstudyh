@@ -4,7 +4,7 @@ Workspace de estudo nativo para Mac: canvas infinito, PDFs, pesquisas, notas e f
 
 ## Baixar para testar
 
-[Baixar o Studyh Canvas 0.3.0 para macOS](releases/StudyhCanvas-0.3.0-macOS-arm64.zip) · Site: [studyh.tech](https://studyh.tech)
+[Baixar o Studyh Canvas 0.3.0 para macOS](releases/StudyhCanvas-0.3.0-macOS-arm64.zip)
 
 Requisitos: Mac com Apple Silicon (M1 ou posterior) e macOS 14 ou posterior.
 

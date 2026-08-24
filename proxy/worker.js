@@ -21,7 +21,7 @@ import { createOpenAIOAuth } from "@openai-oauth/ai-sdk";
 import { openaiCredentials } from "@openai-oauth/web/server";
 import { generateText } from "ai";
 
-const ALLOWED_ORIGIN = "https://studyh.tech"; // troque ou use "*" apenas para testes
+const ALLOWED_ORIGIN = ""; // configure com a origem do seu app em produção
 
 const cors = {
   "Access-Control-Allow-Origin": ALLOWED_ORIGIN,
