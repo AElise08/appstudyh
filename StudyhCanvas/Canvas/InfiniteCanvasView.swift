@@ -20,6 +20,7 @@ struct InfiniteCanvasView: View {
     @State private var pendingErasedStrokeIDs: Set<UUID> = []
     @State private var interactionWorkspaceBefore: Workspace?
     @State private var pendingMaterialDeletion: CanvasNode?
+    @State private var renamingFrame: StudyFrame?
 
     var body: some View {
         GeometryReader { geo in
@@ -27,6 +28,8 @@ struct InfiniteCanvasView: View {
                 grid
                     .contentShape(Rectangle())
                     .gesture(backgroundGesture(in: geo.size))
+
+                frameLayer
 
                 connectionLayer
                     .allowsHitTesting(false)
@@ -90,6 +93,96 @@ struct InfiniteCanvasView: View {
                 secondaryButton: .cancel(Text("Cancelar"))
             )
         }
+        .sheet(item: $renamingFrame) { frame in
+            FrameRenameSheet(title: frame.title) { newTitle in
+                renameFrame(frame, to: newTitle)
+            }
+        }
+    }
+
+    private var frameLayer: some View {
+        ForEach(workspace.frames ?? []) { frame in
+            frameView(frame)
+        }
+    }
+
+    private func frameView(_ frame: StudyFrame) -> some View {
+        let scale = workspace.cameraScale
+        let rect = CGRect(
+            x: frame.rect.x * scale + workspace.cameraX,
+            y: frame.rect.y * scale + workspace.cameraY,
+            width: frame.rect.width * scale,
+            height: frame.rect.height * scale
+        )
+        return ZStack(alignment: .topLeading) {
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.accentColor.opacity(0.045))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color.accentColor.opacity(0.45), style: StrokeStyle(lineWidth: 1.5, dash: [9, 6]))
+                )
+                .allowsHitTesting(false)
+            HStack(spacing: 4) {
+                Text(frame.title)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                Menu {
+                    Button("Renomear quadro…") { renamingFrame = frame }
+                    Button("Excluir quadro", role: .destructive) { deleteFrame(frame) }
+                } label: {
+                    Image(systemName: "ellipsis.circle")
+                }
+                .menuStyle(.borderlessButton)
+                .fixedSize()
+                .help("Opções do quadro")
+            }
+            .padding(.horizontal, 9)
+            .padding(.vertical, 4)
+            .background(.ultraThinMaterial, in: Capsule())
+            .padding(9)
+            .contextMenu {
+                Button("Renomear quadro…") { renamingFrame = frame }
+                Button("Excluir quadro", role: .destructive) { deleteFrame(frame) }
+            }
+            .help("Quadro “\(frame.title)”")
+        }
+        .frame(width: rect.width, height: rect.height)
+        .position(x: rect.midX, y: rect.midY)
+    }
+
+    private func renameFrame(_ frame: StudyFrame, to newTitle: String) {
+        let title = newTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !title.isEmpty,
+              let index = workspace.frames?.firstIndex(where: { $0.id == frame.id }) else { return }
+        let previous = workspace
+        workspace.frames?[index].title = title
+        canvas.registerWorkspaceUndo(
+            from: previous,
+            in: store,
+            undoManager: undoManager,
+            actionName: "Renomear quadro"
+        )
+    }
+
+    private func deleteFrame(_ frame: StudyFrame) {
+        let previous = workspace
+        workspace.frames?.removeAll { $0.id == frame.id }
+        canvas.registerWorkspaceUndo(
+            from: previous,
+            in: store,
+            undoManager: undoManager,
+            actionName: "Excluir quadro"
+        )
+    }
+
+    private func propagateLinkedNoteEdit(nodeID: UUID, body: String) {
+        guard let node = workspace.nodes.first(where: { $0.id == nodeID }),
+              let linkedID = node.linkedNoteID,
+              let index = workspace.studyArtifacts?.firstIndex(where: { $0.id == linkedID }),
+              workspace.studyArtifacts?[index].body != body else { return }
+        workspace.studyArtifacts?[index].body = body
+        workspace.studyArtifacts?[index].updatedAt = Date()
     }
 
     private var orderedNodes: [CanvasNode] {
@@ -289,6 +382,9 @@ struct InfiniteCanvasView: View {
         )
         .scaleEffect(scale)
         .position(x: viewRect.midX, y: viewRect.midY)
+        .onChange(of: node.noteBody) { _, newBody in
+            propagateLinkedNoteEdit(nodeID: node.id, body: newBody)
+        }
     }
 
     private func binding(for id: UUID) -> Binding<CanvasNode> {
@@ -525,6 +621,33 @@ struct InfiniteCanvasView: View {
         workspace.cameraScale = next
         workspace.cameraX = anchor.x - worldX * next
         workspace.cameraY = anchor.y - worldY * next
+    }
+}
+
+private struct FrameRenameSheet: View {
+    @State var title: String
+    let onSave: (String) -> Void
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Renomear quadro").font(.title3.bold())
+            TextField("Nome do quadro", text: $title)
+                .textFieldStyle(.roundedBorder)
+            HStack {
+                Spacer()
+                Button("Cancelar") { dismiss() }
+                    .keyboardShortcut(.cancelAction)
+                Button("Salvar") {
+                    onSave(title)
+                    dismiss()
+                }
+                .buttonStyle(.borderedProminent)
+                .keyboardShortcut(.defaultAction)
+            }
+        }
+        .padding(22)
+        .frame(width: 360)
     }
 }
 

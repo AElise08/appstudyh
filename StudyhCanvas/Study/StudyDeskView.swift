@@ -7,6 +7,7 @@ struct StudyDeskView: View {
     var onOpenMaterial: () -> Void
     var onOpenGuide: () -> Void
     var onOpenYouTube: () -> Void
+    var onSelectMaterial: ((UUID) -> Void)?
     var showsAssistantPanel = true
 
     @EnvironmentObject private var aiSettings: AISettings
@@ -170,6 +171,9 @@ struct StudyDeskView: View {
             let prefix = workspace.studyArtifacts?[index].body.components(separatedBy: "\n").first ?? ""
             workspace.studyArtifacts?[index].body = prefix.hasPrefix("[") ? "\(prefix)\n\(text)" : text
             workspace.studyArtifacts?[index].updatedAt = Date()
+            if let nodeIndex = workspace.nodes.firstIndex(where: { $0.linkedNoteID == editingNoteID }) {
+                workspace.nodes[nodeIndex].noteBody = workspace.studyArtifacts?[index].body ?? ""
+            }
             finishNoteEditing()
             return
         }
@@ -266,6 +270,41 @@ struct StudyDeskView: View {
         }
     }
 
+    private var materialTabBar: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 6) {
+                ForEach(materialOptions) { material in
+                    let isActive = material.id == activeNodeID
+                    Button {
+                        if !isActive { onSelectMaterial?(material.id) }
+                    } label: {
+                        HStack(spacing: 5) {
+                            Image(systemName: material.kind.icon)
+                                .font(.caption2)
+                            Text(material.title)
+                                .font(.caption.weight(.semibold))
+                                .lineLimit(1)
+                        }
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 5)
+                        .background(Capsule().fill(isActive ? Color.accentColor.opacity(0.18) : Color.primary.opacity(0.05)))
+                        .overlay(Capsule().strokeBorder(isActive ? Color.accentColor : Color.clear, lineWidth: 1))
+                        .foregroundStyle(isActive ? Color.accentColor : Color.primary)
+                    }
+                    .buttonStyle(.plain)
+                    .help("Abrir \(material.title)")
+                }
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+        }
+        .background(.bar)
+    }
+
+    private var materialOptions: [CanvasNode] {
+        workspace.nodes.filter(\.isStudyMaterial)
+    }
+
     private var materialNotes: [StudyArtifact] {
         guard let activeNodeID else { return [] }
         return (workspace.studyArtifacts ?? []).filter {
@@ -316,6 +355,35 @@ struct StudyDeskView: View {
             return
         }
         showNotesList = false
+    }
+
+    private func sendNoteToCanvas(_ note: StudyArtifact) {
+        guard workspace.nodes.first(where: { $0.linkedNoteID == note.id }) == nil else { return }
+        let offset = CGFloat(workspace.nodes.count % 8) * 28
+        let node = CanvasNode(
+            kind: .note,
+            title: "Nota",
+            frame: .default(for: .note, origin: CGPoint(x: 140 + offset, y: 140 + offset)),
+            zIndex: (workspace.nodes.map(\.zIndex).max() ?? 0) + 1,
+            noteBody: note.body,
+            linkedNoteID: note.id
+        )
+        workspace.nodes.append(node)
+    }
+
+    private func copyNoteToNotebook(_ note: StudyArtifact) {
+        let materialTitle = note.sourceNodeID.flatMap { id in
+            workspace.nodes.first { $0.id == id }?.title
+        }
+        let notebook = StudyNotebook(
+            title: "Nota · \(materialTitle ?? "estudo")",
+            plainText: editableBody(note.body),
+            sourceMaterialID: note.sourceNodeID,
+            sourcePageIndex: note.sourcePageIndex
+        )
+        var notebooks = workspace.notebooks ?? []
+        notebooks.append(notebook)
+        workspace.notebooks = notebooks
     }
 
     private func legacyPageIndex(in body: String) -> Int? {
@@ -369,6 +437,22 @@ struct StudyDeskView: View {
                                 }
                                 .buttonStyle(.plain)
                                 .accessibilityLabel("Editar nota")
+                                Button {
+                                    sendNoteToCanvas(note)
+                                } label: {
+                                    Image(systemName: "square.and.arrow.down.on.square")
+                                }
+                                .buttonStyle(.plain)
+                                .accessibilityLabel("Enviar nota para a Mesa")
+                                .help("Cria um cartão na Mesa vinculado a esta nota")
+                                Button {
+                                    copyNoteToNotebook(note)
+                                } label: {
+                                    Image(systemName: "book.closed")
+                                }
+                                .buttonStyle(.plain)
+                                .accessibilityLabel("Copiar nota para o caderno")
+                                .help("Copia esta nota para um caderno")
                                 Button(role: .destructive) {
                                     deleteNote(note.id)
                                 } label: {
@@ -521,6 +605,10 @@ struct StudyDeskView: View {
                     .padding(12)
                     .background(.bar)
 
+                    if materialOptions.count > 1 {
+                        materialTabBar
+                    }
+
                     materialViews
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
@@ -559,7 +647,8 @@ struct StudyDeskView: View {
         ZStack {
             ForEach(workspace.nodes.filter { $0.isStudyMaterial && loadedMaterialIDs.contains($0.id) }) { material in
                 if let binding = nodeBinding(material.id) {
-                    NodeContentView(node: binding)
+                    NodeContentView(node: binding, isActive: activeNodeID == material.id)
+                        .id(material.id)
                         .opacity(activeNodeID == material.id ? 1 : 0)
                         .allowsHitTesting(activeNodeID == material.id)
                         .accessibilityHidden(activeNodeID != material.id)
@@ -1338,6 +1427,13 @@ private struct FlashcardDeckView: View {
     @State private var showingBack = false
     @State private var isOpen = true
     @State private var completed = false
+    @State private var practiceMode: DeckPracticeMode = .flip
+    @State private var matchingGame: MatchingGame?
+
+    private enum DeckPracticeMode {
+        case flip
+        case matching
+    }
 
     private var orderedCards: [StudyFlashcard] {
         let due = cards.filter { review(for: $0).map { $0.dueAt <= Date() } == true }
@@ -1367,6 +1463,16 @@ private struct FlashcardDeckView: View {
                 Label("Flashcards", systemImage: "rectangle.on.rectangle")
                     .font(.subheadline.weight(.semibold))
                 Spacer()
+                if cards.count >= 3 {
+                    Picker("Modo", selection: $practiceMode) {
+                        Label("Repetir", systemImage: "rectangle.on.rectangle").tag(DeckPracticeMode.flip)
+                        Label("Associar", systemImage: "point.topleft.down.curvedto.point.bottomright.up").tag(DeckPracticeMode.matching)
+                    }
+                    .pickerStyle(.segmented)
+                    .labelsHidden()
+                    .frame(maxWidth: 190)
+                    .controlSize(.small)
+                }
                 Button {
                     restartFlashcards()
                 } label: {
@@ -1381,7 +1487,9 @@ private struct FlashcardDeckView: View {
                 .controlSize(.small)
             }
             if isOpen {
-                if completed {
+                if practiceMode == .matching {
+                    matchingSection
+                } else if completed {
                     VStack(spacing: 8) {
                         Label("Flashcards concluídos", systemImage: "checkmark.seal.fill")
                             .font(.callout.weight(.semibold))
@@ -1500,11 +1608,149 @@ private struct FlashcardDeckView: View {
         }
     }
 
+    private var matchingSection: some View {
+        Group {
+            if let game = matchingGame {
+                MatchingDeckView(game: game) {
+                    matchingGame = MatchingGame.make(from: cards)
+                }
+            } else if let game = MatchingGame.make(from: cards) {
+                MatchingDeckView(game: game) {
+                    matchingGame = MatchingGame.make(from: cards)
+                }
+                .onAppear { matchingGame = game }
+            } else {
+                Label("Precisa de pelo menos 3 flashcards com termos diferentes para associar.", systemImage: "point.topleft.down.curvedto.point.bottomright.up")
+                    .foregroundStyle(.secondary)
+                    .padding(.vertical, 10)
+            }
+        }
+    }
+
     private func restartFlashcards() {
         isOpen = true
         completed = false
         currentCardID = orderedCards.first?.id
         showingBack = false
+        if practiceMode == .matching {
+            matchingGame = MatchingGame.make(from: cards)
+        }
+    }
+}
+
+private struct MatchingDeckView: View {
+    let game: MatchingGame
+    let onRestart: () -> Void
+    @State private var selectedFront: String?
+    @State private var matched: Set<String> = []
+    @State private var wrongBack: String?
+    @State private var attempts = 0
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text("Toque um termo e depois a definição correspondente.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Text("\(matched.count)/\(game.pairs.count) pareados · \(attempts) tentativas")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .monospacedDigit()
+            }
+            if matched.count == game.pairs.count {
+                VStack(spacing: 8) {
+                    Label("Todos pareados!", systemImage: "checkmark.seal.fill")
+                        .font(.callout.weight(.semibold))
+                        .foregroundStyle(.green)
+                    Text("Você associou os \(game.pairs.count) pares em \(attempts) tentativas. A associação não altera a revisão espaçada.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                    Button("Nova rodada", action: restart)
+                        .buttonStyle(.borderedProminent)
+                        .controlSize(.small)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 10)
+            } else {
+                HStack(alignment: .top, spacing: 10) {
+                    matchingColumn(items: game.fronts, isFront: true)
+                    matchingColumn(items: game.backs, isFront: false)
+                }
+            }
+        }
+    }
+
+    private func matchingColumn(items: [String], isFront: Bool) -> some View {
+        VStack(spacing: 6) {
+            ForEach(items, id: \.self) { text in
+                let isMatched = matched.contains(pairID(for: text, isFront: isFront) ?? "")
+                let isSelected = isFront && selectedFront == text
+                Button {
+                    tap(text, isFront: isFront)
+                } label: {
+                    HStack {
+                        Text(text)
+                            .multilineTextAlignment(.leading)
+                            .fixedSize(horizontal: false, vertical: true)
+                        if isMatched {
+                            Image(systemName: "checkmark")
+                        }
+                    }
+                    .font(.callout)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(isMatched ? Color.green.opacity(0.16) : Color.primary.opacity(0.05))
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .strokeBorder(
+                                isSelected ? Color.accentColor : (wrongBack == text ? Color.red : Color.clear),
+                                lineWidth: 2
+                            )
+                    )
+                }
+                .buttonStyle(.plain)
+                .disabled(isMatched)
+            }
+        }
+    }
+
+    private func tap(_ text: String, isFront: Bool) {
+        if isFront {
+            selectedFront = selectedFront == text ? nil : text
+        } else {
+            guard let front = selectedFront else { return }
+            attempts += 1
+            if game.match(front: front, back: text),
+               let pair = game.pairs.first(where: { $0.front == front }) {
+                matched.insert(pair.id)
+                selectedFront = nil
+                wrongBack = nil
+            } else {
+                wrongBack = text
+                selectedFront = nil
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                    if wrongBack == text { wrongBack = nil }
+                }
+            }
+        }
+    }
+
+    private func pairID(for text: String, isFront: Bool) -> String? {
+        game.pairs.first { isFront ? $0.front == text : $0.back == text }?.id
+    }
+
+    private func restart() {
+        matched = []
+        selectedFront = nil
+        wrongBack = nil
+        attempts = 0
+        onRestart()
     }
 }
 

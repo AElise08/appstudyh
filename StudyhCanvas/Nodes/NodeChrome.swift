@@ -171,6 +171,7 @@ struct NodeChrome: View {
 
 struct NodeContentView: View {
     @Binding var node: CanvasNode
+    var isActive: Bool = true
 
     @ViewBuilder
     var body: some View {
@@ -179,7 +180,7 @@ struct NodeContentView: View {
             case .note: NoteNodeView(node: $node)
             case .pdf: PDFNodeView(node: $node)
             case .epub: EPUBNodeView(node: $node)
-            case .web: WebNodeView(node: $node)
+            case .web: WebNodeView(node: $node, isActive: isActive)
             case .calc: CalcNodeView(node: $node)
             case .slides: SlidesNodeView(node: $node)
             }

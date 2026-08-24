@@ -362,7 +362,8 @@ struct ContentView: View {
                 onToggleStudyTask: toggleStudyTask,
                 onEditStudyTask: editStudyTask,
                 onDeleteStudyTask: requestDeleteStudyTask,
-                onEditDeadlines: openDeadlineEditor
+                onEditDeadlines: openDeadlineEditor,
+                onExportHTML: exportReviewHTML
             )
         }
     }
@@ -374,6 +375,7 @@ struct ContentView: View {
             onOpenMaterial: openMaterial,
             onOpenGuide: openGuide,
             onOpenYouTube: openYouTube,
+            onSelectMaterial: activateMaterial,
             showsAssistantPanel: showsAssistant
         )
     }
@@ -823,6 +825,27 @@ struct ContentView: View {
         examEditorTarget = nil
     }
 
+    private func createFrameFromSelection() {
+        guard let workspace = store.selectedWorkspace else { return }
+        let selectedIDs = canvas.selectedNodeIDs
+        let rects = workspace.nodes.filter { selectedIDs.contains($0.id) }.map(\.frame.cgRect)
+        guard var bounds = rects.first else { return }
+        for rect in rects.dropFirst() { bounds = bounds.union(rect) }
+        guard !bounds.isNull, bounds.width > 0, bounds.height > 0 else { return }
+        let padding: CGFloat = 36
+        bounds = bounds.insetBy(dx: -padding, dy: -padding)
+        let count = (workspace.frames?.count ?? 0) + 1
+        let frame = StudyFrame(
+            title: "Quadro \(count)",
+            rect: CanvasRect(x: bounds.minX, y: bounds.minY, width: bounds.width, height: bounds.height)
+        )
+        updateWorkspaceUndoably(actionName: "Criar quadro") { target in
+            var frames = target.frames ?? []
+            frames.append(frame)
+            target.frames = frames
+        }
+    }
+
     private var canvasToolbar: some View {
         HStack(spacing: 10) {
                 Button {
@@ -832,6 +855,15 @@ struct ContentView: View {
                 } label: {
                     Label("Nota", systemImage: "note.text.badge.plus")
                 }
+
+                Button {
+                    createFrameFromSelection()
+                } label: {
+                    Label("Quadro", systemImage: "rectangle.dashed")
+                }
+                .disabled(canvas.selectedNodeIDs.isEmpty)
+                .help("Criar um quadro nomeado ao redor da seleção")
+                .accessibilityLabel("Criar quadro com a seleção")
 
                 Button {
                     updateWorkspaceUndoably(actionName: "Organizar mesa") { workspace in
@@ -1135,7 +1167,10 @@ struct ContentView: View {
             workspace.studyActivityEvents = Array(events.suffix(2_000))
         }
         canvas.activeStudyNodeID = id
-        appMode = .study
+        let showsStudy = appMode == .study || (appMode == .notebook && notebookLayout == .study)
+        if !showsStudy {
+            appMode = .study
+        }
     }
 
     private func openSearchResult(_ result: StudySearchResult) {
@@ -1210,6 +1245,23 @@ struct ContentView: View {
             }
         }
         activateMaterial(id)
+    }
+
+    private func exportReviewHTML() {
+        guard let workspace = store.selectedWorkspace else { return }
+        let html = StudyHTMLExporter.export(workspace: workspace)
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [.html]
+        panel.nameFieldStringValue = "Studyh - \(workspace.name).html"
+        panel.title = "Exportar revisão"
+        panel.prompt = "Exportar"
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        do {
+            try html.write(to: url, atomically: true, encoding: .utf8)
+            exportMessage = "Revisão exportada para \(url.lastPathComponent). Abra em qualquer navegador ou envie para o celular."
+        } catch {
+            exportMessage = "Não foi possível exportar: \(error.localizedDescription)"
+        }
     }
 
     private func exportToObsidian() {

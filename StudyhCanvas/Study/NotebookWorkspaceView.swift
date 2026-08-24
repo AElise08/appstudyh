@@ -35,6 +35,22 @@ final class RichTextController: ObservableObject {
         textView.insertText(prefix, replacementRange: textView.selectedRange)
     }
 
+    func currentParagraph() -> String? {
+        guard let textView else { return nil }
+        let text = textView.string as NSString
+        let selection = textView.selectedRange
+        guard text.length > 0 else { return nil }
+        var start = min(selection.location, text.length)
+        var end = min(selection.location + max(selection.length, 0), text.length)
+        if start == end && start > 0 && start == text.length { start -= 1 }
+        while start > 0, text.character(at: start - 1) != 0x0A { start -= 1 }
+        while end < text.length, text.character(at: end) != 0x0A { end += 1 }
+        guard start < end else { return nil }
+        let paragraph = text.substring(with: NSRange(location: start, length: end - start))
+        let trimmed = paragraph.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? nil : trimmed
+    }
+
     private func toggleFontTrait(_ trait: NSFontTraitMask) {
         guard let textView else { return }
         let manager = NSFontManager.shared
@@ -64,6 +80,14 @@ struct NotebookWorkspaceView: View {
     var compact = false
     var onOpenMaterial: ((UUID, Int?) -> Void)?
     @StateObject private var editor = RichTextController()
+    @State private var blockMessage: String?
+    @State private var blockMessageSuccess = true
+
+    private enum BlockConversionKind {
+        case flashcard
+        case task
+        case question
+    }
 
     var body: some View {
         Group {
@@ -157,6 +181,23 @@ struct NotebookWorkspaceView: View {
                 Button("Texto") { editor.setFontSize(15) }
                 Button { editor.insertPrefix("• ") } label: { Image(systemName: "list.bullet") }
                 Button { editor.insertPrefix("☐ ") } label: { Image(systemName: "checklist") }
+                Divider().frame(height: 18)
+                Menu {
+                    Button("Flashcard") { createBlock(.flashcard) }
+                    Button("Tarefa") { createBlock(.task) }
+                    Button("Questão") { createBlock(.question) }
+                } label: {
+                    Image(systemName: "wand.and.stars")
+                }
+                .help("Transformar o parágrafo atual em item de revisão")
+                if let blockMessage {
+                    Label(blockMessage, systemImage: blockMessageSuccess ? "checkmark.circle.fill" : "exclamationmark.circle.fill")
+                        .font(.caption.weight(.medium))
+                        .foregroundStyle(blockMessageSuccess ? Color.green : Color.orange)
+                        .lineLimit(2)
+                        .frame(maxWidth: 320, alignment: .leading)
+                        .transition(.opacity)
+                }
             }
             .buttonStyle(.borderless)
             .controlSize(.small)
@@ -197,6 +238,68 @@ struct NotebookWorkspaceView: View {
                 plainText: notebook.plainText,
                 controller: editor
             )
+        }
+    }
+
+    private func createBlock(_ kind: BlockConversionKind) {
+        guard let paragraph = editor.currentParagraph() else {
+            showBlockMessage("Clique dentro de um parágrafo do caderno antes de transformar.", success: false)
+            return
+        }
+        let notebook = workspace.notebooks?.first { $0.id == selectedNotebookID }
+        switch kind {
+        case .flashcard:
+            guard let body = NotebookBlockConverter.flashcardBody(from: paragraph) else {
+                showBlockMessage("Escreva “pergunta — resposta” em uma linha ou duas.", success: false)
+                return
+            }
+            var artifacts = workspace.studyArtifacts ?? []
+            artifacts.append(StudyArtifact(
+                kind: .flashcards,
+                body: body,
+                sourceNodeID: notebook?.sourceMaterialID,
+                sourcePageIndex: notebook?.sourcePageIndex
+            ))
+            workspace.studyArtifacts = artifacts
+            showBlockMessage("Flashcard criado — revise no Estudar ou em Meu Progresso.", success: true)
+        case .task:
+            guard let title = NotebookBlockConverter.taskTitle(from: paragraph) else {
+                showBlockMessage("O parágrafo está vazio.", success: false)
+                return
+            }
+            var tasks = workspace.studyTasks ?? []
+            tasks.append(StudyTask(
+                title: title,
+                dueDate: Calendar.current.date(byAdding: .day, value: 1, to: Date()) ?? Date()
+            ))
+            workspace.studyTasks = tasks
+            showBlockMessage("Tarefa criada — veja em Meu Progresso.", success: true)
+        case .question:
+            guard let body = NotebookBlockConverter.questionBody(from: paragraph) else {
+                showBlockMessage("O parágrafo está vazio.", success: false)
+                return
+            }
+            var artifacts = workspace.studyArtifacts ?? []
+            artifacts.append(StudyArtifact(
+                kind: .question,
+                body: body,
+                sourceNodeID: notebook?.sourceMaterialID,
+                sourcePageIndex: notebook?.sourcePageIndex
+            ))
+            workspace.studyArtifacts = artifacts
+            showBlockMessage("Questão criada — responda no Estudar.", success: true)
+        }
+    }
+
+    private func showBlockMessage(_ message: String, success: Bool) {
+        withAnimation(.easeInOut(duration: 0.15)) {
+            blockMessage = message
+            blockMessageSuccess = success
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
+            if blockMessage == message {
+                withAnimation(.easeInOut(duration: 0.2)) { blockMessage = nil }
+            }
         }
     }
 

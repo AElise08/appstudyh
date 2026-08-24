@@ -156,6 +156,13 @@ enum EPUBHighlightColor: String, Codable, CaseIterable, Identifiable {
     }
 }
 
+struct StudyFrame: Identifiable, Codable, Equatable {
+    var id: UUID = UUID()
+    var title: String
+    var rect: CanvasRect
+    var createdAt: Date = Date()
+}
+
 struct CanvasNode: Identifiable, Codable, Equatable {
     var id: UUID
     var kind: NodeKind
@@ -163,6 +170,7 @@ struct CanvasNode: Identifiable, Codable, Equatable {
     var frame: CanvasRect
     var zIndex: Int
     var noteBody: String
+    var linkedNoteID: UUID?
     var pdfBookmark: Data?
     var pdfPageIndex: Int
     var pdfSelectedText: String
@@ -180,6 +188,7 @@ struct CanvasNode: Identifiable, Codable, Equatable {
     var epubPageCount: Int?
     var webURL: String
     var webSelectedText: String
+    var webSearchProvider: String?
     var webVisibleText: String?
     var webNavigationQuote: String?
     var calcBody: String
@@ -223,6 +232,7 @@ struct CanvasNode: Identifiable, Codable, Equatable {
         epubPageCount: Int? = nil,
         webURL: String = "https://www.google.com",
         webSelectedText: String = "",
+        webSearchProvider: String? = nil,
         webVisibleText: String? = nil,
         webNavigationQuote: String? = nil,
         calcBody: String = "",
@@ -240,6 +250,7 @@ struct CanvasNode: Identifiable, Codable, Equatable {
         sourcePageIndex: Int? = nil,
         sourceQuote: String? = nil,
         sourceURL: String? = nil,
+        linkedNoteID: UUID? = nil,
         obsidian: ObsidianMetadata? = nil
     ) {
         self.id = id
@@ -248,6 +259,7 @@ struct CanvasNode: Identifiable, Codable, Equatable {
         self.frame = frame
         self.zIndex = zIndex
         self.noteBody = noteBody
+        self.linkedNoteID = linkedNoteID
         self.pdfBookmark = pdfBookmark
         self.pdfPageIndex = pdfPageIndex
         self.pdfSelectedText = pdfSelectedText
@@ -265,6 +277,7 @@ struct CanvasNode: Identifiable, Codable, Equatable {
         self.epubPageCount = epubPageCount
         self.webURL = webURL
         self.webSelectedText = webSelectedText
+        self.webSearchProvider = webSearchProvider
         self.webVisibleText = webVisibleText
         self.webNavigationQuote = webNavigationQuote
         self.calcBody = calcBody
@@ -784,6 +797,7 @@ struct Workspace: Identifiable, Codable, Equatable {
     var studyTasks: [StudyTask]?
     var notebooks: [StudyNotebook]?
     var focusSessions: [StudyFocusSession]?
+    var frames: [StudyFrame]?
 
     init(
         id: UUID = UUID(),
@@ -805,7 +819,8 @@ struct Workspace: Identifiable, Codable, Equatable {
         studyActivityEvents: [StudyActivityEvent]? = nil,
         studyTasks: [StudyTask]? = nil,
         notebooks: [StudyNotebook]? = nil,
-        focusSessions: [StudyFocusSession]? = nil
+        focusSessions: [StudyFocusSession]? = nil,
+        frames: [StudyFrame]? = nil
     ) {
         self.schemaVersion = Self.currentSchemaVersion
         self.id = id
@@ -828,6 +843,7 @@ struct Workspace: Identifiable, Codable, Equatable {
         self.studyTasks = studyTasks
         self.notebooks = notebooks
         self.focusSessions = focusSessions
+        self.frames = frames
     }
 }
 

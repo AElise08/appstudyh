@@ -3,6 +3,7 @@ import WebKit
 
 struct WebNodeView: View {
     @Binding var node: CanvasNode
+    var isActive: Bool = true
     @State private var address: String = ""
     @State private var searchProvider: WebSearchProvider = .google
     @StateObject private var browser = WebNavigator()
@@ -19,12 +20,20 @@ struct WebNodeView: View {
                     .help("Avançar")
                     .accessibilityLabel("Próxima página")
                 Button {
-                    address = searchProvider.homeURL
-                    commitURL()
+                    let home = searchProvider.homeURL
+                    if node.webURL == home {
+                        browser.reload()
+                    } else {
+                        address = home
+                        commitURL()
+                    }
                 } label: { Image(systemName: "house") }
                     .help("Página inicial")
                     .accessibilityLabel("Página inicial")
-                Picker("Busca", selection: $searchProvider) {
+                Button { browser.reload() } label: { Image(systemName: "arrow.clockwise") }
+                    .help("Recarregar página")
+                    .accessibilityLabel("Recarregar página")
+                Picker("Busca", selection: searchProviderBinding) {
                     ForEach(WebSearchProvider.allCases) { provider in
                         Text(provider.label).tag(provider)
                     }
@@ -47,7 +56,17 @@ struct WebNodeView: View {
             .background(.bar)
             .onAppear {
                 address = node.webURL
-                searchProvider = node.webURL.contains("scholar.google") ? .scholar : .google
+                searchProvider = savedSearchProvider
+            }
+            .onChange(of: node.webURL) { _, newURL in
+                address = newURL
+            }
+            .onChange(of: isActive) { _, active in
+                guard active else { return }
+                if browser.currentURLMatches(node.webURL) == false {
+                    address = node.webURL
+                    browser.load(urlString: node.webURL)
+                }
             }
 
             WebKitView(
@@ -76,6 +95,31 @@ struct WebNodeView: View {
         node.webSelectedText = ""
         node.webURL = value
         address = value
+    }
+
+    private var savedSearchProvider: WebSearchProvider {
+        if let saved = node.webSearchProvider.flatMap(WebSearchProvider.init(rawValue:)) {
+            return saved
+        }
+        return node.webURL.contains("scholar.google") ? .scholar : .google
+    }
+
+    private var searchProviderBinding: Binding<WebSearchProvider> {
+        Binding(
+            get: { searchProvider },
+            set: { newValue in
+                guard newValue != searchProvider else { return }
+                searchProvider = newValue
+                node.webSearchProvider = newValue.rawValue
+                let home = newValue.homeURL
+                if node.webURL == home {
+                    browser.reload()
+                } else {
+                    address = home
+                    commitURL()
+                }
+            }
+        )
     }
 }
 
@@ -137,6 +181,7 @@ private struct WebKitView: NSViewRepresentable {
         func load(_ string: String, in view: WKWebView) {
             lastURL = string
             guard let url = URL(string: string) else { return }
+            view.stopLoading()
             view.load(URLRequest(url: url))
         }
 
@@ -239,6 +284,29 @@ private final class WebNavigator: ObservableObject {
 
     func goForward() {
         webView?.goForward()
+        refreshNavigationState()
+    }
+
+    func reload() {
+        webView?.reload()
+        refreshNavigationState()
+    }
+
+    func currentURLMatches(_ target: String) -> Bool {
+        guard let current = webView?.url?.absoluteString else { return false }
+        return normalizedURL(current) == normalizedURL(target)
+    }
+
+    private func normalizedURL(_ value: String) -> String {
+        var normalized = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        while normalized.hasSuffix("/") { normalized.removeLast() }
+        return normalized
+    }
+
+    func load(urlString: String) {
+        guard let url = URL(string: urlString) else { return }
+        webView?.stopLoading()
+        webView?.load(URLRequest(url: url))
         refreshNavigationState()
     }
 

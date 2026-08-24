@@ -12,6 +12,15 @@ struct ProgressDashboardView: View {
     let onEditStudyTask: (StudyTask) -> Void
     let onDeleteStudyTask: (StudyTask) -> Void
     let onEditDeadlines: () -> Void
+    var onExportHTML: () -> Void = {}
+
+    private enum TaskViewMode {
+        case list
+        case table
+        case kanban
+    }
+
+    @State private var taskViewMode: TaskViewMode = .list
 
     private var snapshot: WorkspaceProgressSnapshot {
         ProgressMetrics.snapshot(for: workspace)
@@ -22,9 +31,11 @@ struct ProgressDashboardView: View {
             VStack(alignment: .leading, spacing: 20) {
                 header
                 overview
+                frameProgress
                 todayPlan
                 taskList
                 reviewAgain
+                lightPractice
                 dailyNotes
                 materials
                 production
@@ -35,6 +46,40 @@ struct ProgressDashboardView: View {
             .frame(maxWidth: .infinity)
         }
         .background(Color(nsColor: .windowBackgroundColor))
+    }
+
+    @ViewBuilder
+    private var frameProgress: some View {
+        if !snapshot.frameSnapshots.isEmpty {
+            VStack(alignment: .leading, spacing: 10) {
+                Text("Quadros da mesa").font(.title2.bold())
+                ForEach(snapshot.frameSnapshots) { frame in
+                    HStack(spacing: 12) {
+                        Image(systemName: "rectangle.dashed")
+                            .foregroundStyle(Color.accentColor)
+                            .frame(width: 22)
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(frame.title).font(.subheadline.weight(.semibold))
+                            if frame.total > 0, let fraction = frame.fraction {
+                                ProgressView(value: fraction).frame(maxWidth: 260)
+                            }
+                        }
+                        Spacer()
+                        if frame.total > 0 {
+                            Text("\(frame.covered) de \(frame.total) unidades cobertas")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        } else {
+                            Text("Nenhum material mensurável")
+                                .font(.caption)
+                                .foregroundStyle(.tertiary)
+                        }
+                    }
+                    .padding(10)
+                    .background(Color.primary.opacity(0.035), in: RoundedRectangle(cornerRadius: 9))
+                }
+            }
+        }
     }
 
     private var header: some View {
@@ -51,6 +96,12 @@ struct ProgressDashboardView: View {
                     Label("Nova tarefa", systemImage: "plus")
                 }
                 .buttonStyle(.borderedProminent)
+                Button {
+                    onExportHTML()
+                } label: {
+                    Label("Exportar revisão", systemImage: "safari")
+                }
+                .help("Gera uma página HTML com flashcards e questões para revisar em qualquer navegador")
                 Button("Provas e datas", action: onEditDeadlines)
             }
         }
@@ -141,38 +192,152 @@ struct ProgressDashboardView: View {
             HStack {
                 Text("Tarefas").font(.title2.bold())
                 Spacer()
+                Picker("Visão", selection: $taskViewMode) {
+                    Label("Lista", systemImage: "list.bullet").tag(TaskViewMode.list)
+                    Label("Tabela", systemImage: "tablecells").tag(TaskViewMode.table)
+                    Label("Quadro", systemImage: "rectangle.split.3x1").tag(TaskViewMode.kanban)
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .frame(maxWidth: 280)
                 Button(action: onCreateTask) {
                     Label("Nova tarefa", systemImage: "plus")
                 }
             }
-            if allStudyTasks.isEmpty && snapshot.tasks.isEmpty {
-                Text("Crie uma tarefa para exercícios, listas, provas ou trabalhos.")
+            switch taskViewMode {
+            case .list:
+                listTaskRows
+            case .table:
+                taskTable
+            case .kanban:
+                taskKanban
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var listTaskRows: some View {
+        if allStudyTasks.isEmpty && snapshot.tasks.isEmpty {
+            Text("Crie uma tarefa para exercícios, listas, provas ou trabalhos.")
+                .foregroundStyle(.secondary)
+        } else {
+            ForEach(allStudyTasks) { task in
+                studyTaskListRow(task)
+            }
+            ForEach(snapshot.tasks.sorted(by: taskSort)) { task in
+                HStack(spacing: 10) {
+                    Button { onToggleTask(task) } label: {
+                        Image(systemName: task.isCompleted ? "checkmark.circle.fill" : "circle")
+                    }
+                    .buttonStyle(.plain)
+                    Button { onOpenTask(task.nodeID) } label: {
+                        Text(task.title)
+                            .strikethrough(task.isCompleted)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .buttonStyle(.plain)
+                    Text(task.dueDate?.formatted(date: .abbreviated, time: .omitted) ?? "Do Obsidian")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                .padding(10)
+                .background(Color.primary.opacity(0.035), in: RoundedRectangle(cornerRadius: 9))
+                .opacity(task.isCompleted ? 0.58 : 1)
+            }
+        }
+    }
+
+    private var taskTable: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            if allStudyTasks.isEmpty {
+                Text("Nenhuma tarefa nativa. Tarefas do Obsidian aparecem na visualização em lista.")
                     .foregroundStyle(.secondary)
             } else {
-                ForEach(allStudyTasks) { task in
-                    studyTaskListRow(task)
-                }
-                ForEach(snapshot.tasks.sorted(by: taskSort)) { task in
-                    HStack(spacing: 10) {
-                        Button { onToggleTask(task) } label: {
-                            Image(systemName: task.isCompleted ? "checkmark.circle.fill" : "circle")
-                        }
-                        .buttonStyle(.plain)
-                        Button { onOpenTask(task.nodeID) } label: {
-                            Text(task.title)
-                                .strikethrough(task.isCompleted)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                        }
-                        .buttonStyle(.plain)
-                        Text(task.dueDate?.formatted(date: .abbreviated, time: .omitted) ?? "Do Obsidian")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                Grid(alignment: .leading, horizontalSpacing: 14, verticalSpacing: 0) {
+                    GridRow {
+                        Text("Tarefa")
+                        Text("Prioridade")
+                        Text("Prazo")
+                        Text("Status")
                     }
-                    .padding(10)
-                    .background(Color.primary.opacity(0.035), in: RoundedRectangle(cornerRadius: 9))
-                    .opacity(task.isCompleted ? 0.58 : 1)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .padding(.bottom, 6)
+                    Divider()
+                    ForEach(allStudyTasks) { task in
+                        GridRow {
+                            Button { onEditStudyTask(task) } label: {
+                                Text(task.title)
+                                    .strikethrough(task.isCompleted)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                            }
+                            .buttonStyle(.plain)
+                            .gridColumnAlignment(.leading)
+                            priorityBadge(task.priority)
+                            Text(studyTaskDateLabel(task))
+                                .foregroundStyle(studyTaskIsOverdue(task) && !task.isCompleted ? Color.red : Color.secondary)
+                            Button { onToggleStudyTask(task) } label: {
+                                Image(systemName: task.isCompleted ? "checkmark.circle.fill" : "circle")
+                                    .foregroundStyle(task.isCompleted ? Color.green : priorityColor(task.priority))
+                            }
+                            .buttonStyle(.plain)
+                        }
+                        .font(.callout)
+                        .padding(.vertical, 7)
+                        .opacity(task.isCompleted ? 0.58 : 1)
+                        Divider()
+                    }
                 }
             }
+        }
+    }
+
+    private var taskKanban: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            let columns = StudyTaskBoard.columns(for: workspace.studyTasks ?? [])
+            HStack(alignment: .top, spacing: 12) {
+                ForEach([StudyTaskPriority.high, .normal, .low], id: \.self) { priority in
+                    kanbanColumn(priority, tasks: columns[priority] ?? [])
+                }
+            }
+            if (workspace.studyTasks ?? []).allSatisfy(\.isCompleted) || (workspace.studyTasks ?? []).isEmpty {
+                Text("Arraste cartões entre as colunas para mudar a prioridade.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private func kanbanColumn(_ priority: StudyTaskPriority, tasks: [StudyTask]) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Label("\(priority.label) · \(tasks.count)", systemImage: "flag.fill")
+                .font(.caption.weight(.bold))
+                .foregroundStyle(priorityColor(priority))
+            ForEach(tasks) { task in
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(task.title)
+                        .font(.subheadline)
+                        .lineLimit(3)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    Text(studyTaskDateLabel(task))
+                        .font(.caption2)
+                        .foregroundStyle(studyTaskIsOverdue(task) ? Color.red : Color.secondary)
+                }
+                .padding(10)
+                .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 9))
+                .draggable(task.id.uuidString)
+                .contextMenu { studyTaskMenu(task) }
+            }
+        }
+        .padding(10)
+        .frame(maxWidth: .infinity, minHeight: 130, alignment: .topLeading)
+        .background(Color.primary.opacity(0.03), in: RoundedRectangle(cornerRadius: 12))
+        .dropDestination(for: String.self) { items, _ in
+            guard let idString = items.first,
+                  let id = UUID(uuidString: idString),
+                  let index = workspace.studyTasks?.firstIndex(where: { $0.id == id }) else { return false }
+            workspace.studyTasks?[index].priority = priority
+            return true
         }
     }
 
@@ -383,6 +548,17 @@ struct ProgressDashboardView: View {
                         .background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 9))
                     }.buttonStyle(.plain)
                 }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var lightPractice: some View {
+        let vocabulary = WordSearchPuzzle.vocabulary(from: workspace.studyArtifacts ?? [])
+        if vocabulary.count >= 3 {
+            VStack(alignment: .leading, spacing: 10) {
+                Text("Prática leve").font(.title2.bold())
+                WordSearchView(rawWords: vocabulary)
             }
         }
     }
@@ -648,5 +824,315 @@ struct ProgressDashboardView: View {
             .map { $0.replacingOccurrences(of: "**", with: "").trimmingCharacters(in: .whitespacesAndNewlines) }
             .first { !$0.isEmpty && !$0.lowercased().hasPrefix("gabarito") }
             ?? "Questão salva"
+    }
+}
+
+private struct WordSearchView: View {
+    let rawWords: [String]
+    @State private var puzzle: WordSearchPuzzle?
+    @State private var found: Set<String> = []
+    @State private var selectionStart: WordSearchPuzzle.Coordinate?
+    @State private var wrongEnd: WordSearchPuzzle.Coordinate?
+    @State private var dragStartCell: WordSearchPuzzle.Coordinate?
+    @State private var dragCurrentCell: WordSearchPuzzle.Coordinate?
+    @State private var pulseWord: String?
+    @State private var revealAll = false
+
+    private let cellSize: CGFloat = 30
+    private let cellSpacing: CGFloat = 3
+    private let palette: [Color] = [.blue, .orange, .purple, .green, .pink, .teal]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            header
+            if let puzzle {
+                ViewThatFits(in: .horizontal) {
+                    HStack(alignment: .top, spacing: 24) {
+                        gridCard(puzzle)
+                        sidePanel(puzzle)
+                    }
+                    VStack(alignment: .leading, spacing: 16) {
+                        gridCard(puzzle)
+                        sidePanel(puzzle)
+                    }
+                }
+                if found.count == puzzle.placements.count {
+                    completionBanner
+                        .transition(.scale(scale: 0.9).combined(with: .opacity))
+                }
+            } else {
+                emptyHint
+            }
+        }
+        .animation(.easeInOut(duration: 0.25), value: found)
+        .padding(16)
+        .background(Color.accentColor.opacity(0.06), in: RoundedRectangle(cornerRadius: 14))
+        .onAppear {
+            if puzzle == nil { generate() }
+        }
+    }
+
+    private var header: some View {
+        HStack(alignment: .center, spacing: 10) {
+            Label("Caça-palavras dos flashcards", systemImage: "square.grid.3x3.middle.filled")
+                .font(.subheadline.weight(.semibold))
+            Spacer()
+            if let puzzle {
+                ProgressView(value: Double(found.count), total: Double(puzzle.placements.count))
+                    .frame(width: 110)
+                Text("\(found.count)/\(puzzle.placements.count)")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .monospacedDigit()
+            }
+            Button {
+                revealAll.toggle()
+            } label: {
+                Label("Revelar", systemImage: revealAll ? "eye.fill" : "eye")
+            }
+            .controlSize(.small)
+            .help(revealAll ? "Esconder as palavras" : "Mostrar onde as palavras estão")
+            Button {
+                generate()
+            } label: {
+                Label("Novo", systemImage: "arrow.counterclockwise")
+            }
+            .controlSize(.small)
+        }
+    }
+
+    private var cellStep: CGFloat { cellSize + cellSpacing }
+
+    private func gridCard(_ puzzle: WordSearchPuzzle) -> some View {
+        var foundOffsets: [WordSearchPuzzle.Coordinate: Int] = [:]
+        for (offset, placement) in puzzle.placements.enumerated() where found.contains(placement.word) {
+            for cell in placement.cells {
+                foundOffsets[cell] = offset
+            }
+        }
+        let previewLine = previewLine(in: puzzle)
+        let gridWidth = CGFloat(puzzle.size) * cellStep - cellSpacing
+        return LazyVGrid(
+            columns: Array(repeating: GridItem(.fixed(cellSize), spacing: cellSpacing), count: puzzle.size),
+            spacing: cellSpacing
+        ) {
+            ForEach(0..<(puzzle.size * puzzle.size), id: \.self) { index in
+                let row = index / puzzle.size
+                let col = index % puzzle.size
+                let coordinate = WordSearchPuzzle.Coordinate(row: row, col: col)
+                wordSearchCell(puzzle, coordinate: coordinate, row: row, col: col, foundOffset: foundOffsets[coordinate])
+            }
+        }
+        .frame(width: gridWidth)
+        .overlay {
+            Canvas { context, _ in
+                for (offset, placement) in puzzle.placements.enumerated() {
+                    let color = palette[offset % palette.count]
+                    let isFound = found.contains(placement.word)
+                    if !isFound && !revealAll { continue }
+                    guard let last = placement.cells.last else { continue }
+                    var path = Path()
+                    path.move(to: cellCenter(placement.start))
+                    path.addLine(to: cellCenter(last))
+                    context.stroke(
+                        path,
+                        with: .color(color.opacity(isFound ? 0.38 : 0.16)),
+                        style: StrokeStyle(
+                            lineWidth: cellSize * 0.72,
+                            lineCap: .round,
+                            lineJoin: .round,
+                            dash: isFound ? [] : [2, 6]
+                        )
+                    )
+                }
+                if let line = previewLine {
+                    var path = Path()
+                    path.move(to: cellCenter(line.start))
+                    path.addLine(to: cellCenter(line.end))
+                    context.stroke(
+                        path,
+                        with: .color(line.isValid ? Color.accentColor.opacity(0.3) : Color.primary.opacity(0.12)),
+                        style: StrokeStyle(lineWidth: cellSize * 0.72, lineCap: .round, lineJoin: .round)
+                    )
+                }
+            }
+            .allowsHitTesting(false)
+        }
+        .gesture(dragGesture(in: puzzle))
+        .padding(12)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color(nsColor: .textBackgroundColor))
+                .shadow(color: .black.opacity(0.12), radius: 4, y: 2)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .strokeBorder(Color.primary.opacity(0.22), lineWidth: 1)
+        )
+    }
+
+    private func wordSearchCell(
+        _ puzzle: WordSearchPuzzle,
+        coordinate: WordSearchPuzzle.Coordinate,
+        row: Int,
+        col: Int,
+        foundOffset: Int?
+    ) -> some View {
+        let isStart = selectionStart == coordinate || dragStartCell == coordinate
+        let isWrong = wrongEnd == coordinate
+        let tint: Color? = foundOffset.map { palette[$0 % palette.count] }
+        let fill: Color
+        if let tint {
+            fill = tint.opacity(0.18)
+        } else if isStart {
+            fill = Color.accentColor.opacity(0.3)
+        } else if isWrong {
+            fill = Color.red.opacity(0.22)
+        } else {
+            fill = Color.primary.opacity(0.08)
+        }
+        return Text(String(puzzle.grid[row][col]))
+            .font(.system(.callout, design: .monospaced).weight(foundOffset != nil || isStart ? .bold : .regular))
+            .foregroundStyle(tint ?? Color.primary)
+            .frame(width: cellSize, height: cellSize)
+            .background(RoundedRectangle(cornerRadius: 6).fill(fill))
+    }
+
+    private func sidePanel(_ puzzle: WordSearchPuzzle) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            LazyVGrid(
+                columns: [GridItem(.adaptive(minimum: 140), spacing: 6)],
+                alignment: .leading,
+                spacing: 6
+            ) {
+                ForEach(puzzle.placements.enumerated().map { (word: $0.element.word, offset: $0.offset) }, id: \.word) { item in
+                    let color = palette[item.offset % palette.count]
+                    let isFound = found.contains(item.word)
+                    let isPulsing = pulseWord == item.word
+                    HStack(spacing: 5) {
+                        Image(systemName: isFound ? "checkmark.circle.fill" : "circle.dotted")
+                            .foregroundStyle(isFound ? color : Color.secondary)
+                        Text(item.word)
+                            .font(.caption.weight(.semibold))
+                            .strikethrough(isFound)
+                            .foregroundStyle(isFound ? color : Color.primary)
+                    }
+                    .padding(.horizontal, 9)
+                    .padding(.vertical, 5)
+                    .background(Capsule().fill(color.opacity(isFound ? 0.14 : 0.06)))
+                    .overlay(Capsule().strokeBorder(color.opacity(isPulsing ? 0.9 : 0), lineWidth: 2))
+                    .scaleEffect(isPulsing ? 1.12 : 1)
+                    .animation(.spring(duration: 0.3), value: pulseWord)
+                }
+            }
+            Text("Arraste pelas letras ou toque na primeira e na última — horizontal, vertical, diagonal e ao contrário.")
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
+        }
+    }
+
+    private var completionBanner: some View {
+        Label("Todas as palavras encontradas — bom estudo!", systemImage: "party.popper.fill")
+            .font(.callout.weight(.semibold))
+            .foregroundStyle(.green)
+            .frame(maxWidth: .infinity)
+            .padding(10)
+            .background(Color.green.opacity(0.12), in: RoundedRectangle(cornerRadius: 10))
+    }
+
+    private var emptyHint: some View {
+        Text("Os termos dos flashcards precisam ter pelo menos 4 letras para virar o caça-palavras.")
+            .font(.caption)
+            .foregroundStyle(.secondary)
+    }
+
+    private func generate() {
+        puzzle = WordSearchPuzzle.make(from: rawWords)
+        found = []
+        selectionStart = nil
+        wrongEnd = nil
+        dragStartCell = nil
+        dragCurrentCell = nil
+        pulseWord = nil
+        revealAll = false
+    }
+
+    private func cellCenter(_ coordinate: WordSearchPuzzle.Coordinate) -> CGPoint {
+        CGPoint(
+            x: CGFloat(coordinate.col) * cellStep + cellSize / 2,
+            y: CGFloat(coordinate.row) * cellStep + cellSize / 2
+        )
+    }
+
+    private func cellAt(_ location: CGPoint, in puzzle: WordSearchPuzzle) -> WordSearchPuzzle.Coordinate? {
+        let col = Int(location.x / cellStep)
+        let row = Int(location.y / cellStep)
+        guard row >= 0, row < puzzle.size, col >= 0, col < puzzle.size else { return nil }
+        return WordSearchPuzzle.Coordinate(row: row, col: col)
+    }
+
+    private func previewLine(in puzzle: WordSearchPuzzle) -> (start: WordSearchPuzzle.Coordinate, end: WordSearchPuzzle.Coordinate, isValid: Bool)? {
+        guard let start = dragStartCell, let end = dragCurrentCell, start != end else { return nil }
+        let deltaRow = end.row - start.row
+        let deltaCol = end.col - start.col
+        let straight = deltaRow == 0 || deltaCol == 0 || abs(deltaRow) == abs(deltaCol)
+        guard straight else { return nil }
+        return (start, end, true)
+    }
+
+    private func dragGesture(in puzzle: WordSearchPuzzle) -> some Gesture {
+        DragGesture(minimumDistance: 0)
+            .onChanged { value in
+                let cell = cellAt(value.location, in: puzzle)
+                if dragStartCell == nil {
+                    dragStartCell = cell
+                }
+                dragCurrentCell = cell ?? dragCurrentCell
+            }
+            .onEnded { value in
+                guard let start = dragStartCell,
+                      let end = cellAt(value.location, in: puzzle) else {
+                    dragStartCell = nil
+                    dragCurrentCell = nil
+                    return
+                }
+                commitSelection(start: start, end: end, in: puzzle)
+                dragStartCell = nil
+                dragCurrentCell = nil
+            }
+    }
+
+    private func commitSelection(start: WordSearchPuzzle.Coordinate, end: WordSearchPuzzle.Coordinate, in puzzle: WordSearchPuzzle) {
+        if start == end {
+            if let existing = selectionStart {
+                if existing == start {
+                    selectionStart = nil
+                } else {
+                    tryWord(from: existing, to: start, in: puzzle)
+                }
+            } else {
+                selectionStart = start
+            }
+        } else {
+            tryWord(from: start, to: end, in: puzzle)
+        }
+    }
+
+    private func tryWord(from start: WordSearchPuzzle.Coordinate, to end: WordSearchPuzzle.Coordinate, in puzzle: WordSearchPuzzle) {
+        selectionStart = nil
+        wrongEnd = nil
+        guard let word = puzzle.word(from: start, to: end) else {
+            wrongEnd = end
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                if wrongEnd == end { wrongEnd = nil }
+            }
+            return
+        }
+        guard !found.contains(word) else { return }
+        found.insert(word)
+        pulseWord = word
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            if pulseWord == word { pulseWord = nil }
+        }
     }
 }

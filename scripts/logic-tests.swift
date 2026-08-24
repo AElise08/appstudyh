@@ -519,6 +519,139 @@ do {
     check("integracao de caderno: \(error)", false)
 }
 
+// 20. Frames da mesa, blocos do caderno, kanban e notas espelhadas
+do {
+    var pdfMaterial = CanvasNode(kind: .pdf, title: "Apostila", frame: CanvasRect(x: 0, y: 0, width: 300, height: 400))
+    pdfMaterial.pdfPageCount = 4
+    pdfMaterial.pdfPageIndex = 2
+    pdfMaterial.visitedUnitIndices = [0, 1]
+    var outsideMaterial = CanvasNode(kind: .pdf, title: "Fora", frame: CanvasRect(x: 5_000, y: 5_000, width: 300, height: 400))
+    outsideMaterial.pdfPageCount = 4
+    outsideMaterial.visitedUnitIndices = [0, 1, 2]
+    var frame = StudyFrame(title: "Unidade 3 da prova", rect: CanvasRect(x: -50, y: -50, width: 500, height: 600))
+    frame.createdAt = Date(timeIntervalSince1970: 1_700_000_000)
+    let frameWorkspace = Workspace(
+        name: "Frames",
+        nodes: [pdfMaterial, outsideMaterial],
+        frames: [frame]
+    )
+    let frameSnapshot = ProgressMetrics.snapshot(for: frameWorkspace)
+    check("frame cobre apenas materiais internos", frameSnapshot.frameSnapshots.first?.covered == 2 && frameSnapshot.frameSnapshots.first?.total == 4)
+    check("cobertura geral nao muda com frames", frameSnapshot.coveredUnits == 5 && frameSnapshot.coverableUnits == 8)
+
+    let encoder = JSONEncoder()
+    encoder.dateEncodingStrategy = .iso8601
+    let decoder = JSONDecoder()
+    decoder.dateDecodingStrategy = .iso8601
+    let roundtrip = try decoder.decode(Workspace.self, from: encoder.encode(frameWorkspace))
+    check("frames sobrevivem ao ciclo json", roundtrip.frames == frameWorkspace.frames)
+
+    let legacyNodeJSON = """
+    {"id":"\(UUID().uuidString)","kind":"note","title":"Nota antiga","frame":{"x":0,"y":0,"width":280,"height":220},"zIndex":0,"noteBody":"conteúdo","pdfPageIndex":0,"pdfSelectedText":"","pdfVisibleText":"","webURL":"https://example.com","webSelectedText":"","calcBody":""}
+    """
+    let legacyNode = try decoder.decode(CanvasNode.self, from: Data(legacyNodeJSON.utf8))
+    check("no legado decodifica sem linkedNoteID", legacyNode.linkedNoteID == nil)
+
+    let cardBody = NotebookBlockConverter.flashcardBody(from: "O que é entalpia?\nFunção de estado termodinâmico")
+    check("bloco vira flashcard de duas linhas", cardBody != nil && StudyFlashcard.parseDeck(cardBody ?? "")?.count == 1)
+    let inlineBody = NotebookBlockConverter.flashcardBody(from: "O que é entropia — medida de desordem")
+    let inlineCards = inlineBody.flatMap { StudyFlashcard.parseDeck($0) }
+    check("bloco vira flashcard inline", inlineCards?.first?.front == "O que é entropia" && inlineCards?.first?.back == "medida de desordem")
+    check("bloco vazio nao vira flashcard", NotebookBlockConverter.flashcardBody(from: "   ") == nil)
+    check("bloco vira título de tarefa", NotebookBlockConverter.taskTitle(from: "Fazer lista 3\n de cálculo") == "Fazer lista 3")
+    check("bloco vira questão", NotebookBlockConverter.questionBody(from: "Explique o ciclo de Carnot.") == "Explique o ciclo de Carnot.")
+
+    let now = Date()
+    let boardTasks = [
+        StudyTask(title: "baixa", dueDate: now, priority: .low),
+        StudyTask(title: "alta", dueDate: now.addingTimeInterval(10), priority: .high),
+        StudyTask(title: "alta antiga", dueDate: now, priority: .high),
+        StudyTask(title: "feita", dueDate: now, priority: .high, isCompleted: true)
+    ]
+    let board = StudyTaskBoard.columns(for: boardTasks)
+    check("kanban agrupa por prioridade", board[.high]?.map(\.title) == ["alta antiga", "alta"] && board[.low]?.count == 1 && board[.normal]?.isEmpty == true)
+    check("kanban ignora concluídas", board.values.flatMap { $0 }.contains { $0.title == "feita" } == false)
+
+    var mirrorWorkspace = Workspace(name: "Espelho")
+    let note = StudyArtifact(kind: .note, body: "[Apostila · pág. 3]\nFórmula importante")
+    mirrorWorkspace.studyArtifacts = [note]
+    let mirrorNode = CanvasNode(kind: .note, title: "Nota", frame: .default(for: .note, origin: .zero), noteBody: note.body, linkedNoteID: note.id)
+    mirrorWorkspace.nodes.append(mirrorNode)
+    let mirrorEncoded = try decoder.decode(Workspace.self, from: encoder.encode(mirrorWorkspace))
+    check("nota espelhada mantém vínculo", mirrorEncoded.nodes.first?.linkedNoteID == note.id && mirrorEncoded.nodes.first?.noteBody == note.body)
+} catch {
+    check("frames e blocos: \(error)", false)
+}
+
+// 21. Associação, caça-palavras e exportação HTML
+do {
+    let deckCards = (1...7).map { StudyFlashcard(front: "Termo \($0)", back: "Definição \($0)") }
+    let game = MatchingGame.make(from: deckCards)
+    check("associação limita pares", game?.pairs.count == 6)
+    check("associação embaralha sem perder cartas", game?.fronts.count == 6 && game?.backs.count == 6)
+    let firstPair = game?.pairs.first
+    check("associação valida par correto", game?.match(front: firstPair?.front ?? "", back: firstPair?.back ?? "") == true)
+    check("associação rejeita par trocado", game?.match(front: firstPair?.front ?? "", back: game?.pairs.last?.back ?? "") == false)
+    check("associação exige três cartas", MatchingGame.make(from: Array(deckCards.prefix(2))) == nil)
+    let duplicateDeck = [
+        StudyFlashcard(front: "Mesmo", back: "A"),
+        StudyFlashcard(front: "Mesmo", back: "B"),
+        StudyFlashcard(front: "Outro", back: "C")
+    ]
+    check("associação remove frentes duplicadas", MatchingGame.make(from: duplicateDeck) == nil)
+
+    check("normalização remove acentos", WordSearchPuzzle.normalize("Coração") == "CORACAO")
+    check("normalização recusa palavras curtas", WordSearchPuzzle.normalize("calor") != nil && WordSearchPuzzle.normalize("sol") == nil)
+    let puzzle = WordSearchPuzzle.make(from: ["entalpia", "entropia", "adiabática", "isotérmica", "quântica"])
+    check("caça-palavras é gerado", puzzle != nil)
+    if let puzzle {
+        check("caça-palavras posiciona todas as palavras", puzzle.placements.count == 5 && Set(puzzle.placements.map(\.word)).count == 5)
+        var allPlacedCorrectly = true
+        for placement in puzzle.placements {
+            let spelled = placement.cells.map { puzzle.grid[$0.row][$0.col] }
+            if String(spelled) != placement.word { allPlacedCorrectly = false }
+        }
+        check("caça-palavras soletra palavras no grid", allPlacedCorrectly)
+        let first = puzzle.placements[0]
+        let lastCell = first.cells.last!
+        check("caça-palavras reconhece seleção direta", puzzle.word(from: first.start, to: lastCell) == first.word)
+        check("caça-palavras reconhece seleção invertida", puzzle.word(from: lastCell, to: first.start) == first.word)
+        check("caça-palavras rejeita linha torta", puzzle.word(from: WordSearchPuzzle.Coordinate(row: 0, col: 0), to: WordSearchPuzzle.Coordinate(row: 1, col: 3)) == nil)
+        check("caça-palavras usa oito direções", WordSearchPuzzle.Direction.allCases.count == 8)
+        var seenDirections = Set<WordSearchPuzzle.Direction>()
+        var sawReversed = false
+        let reversedDirections: Set<WordSearchPuzzle.Direction> = [.left, .up, .upLeft, .downLeft]
+        for _ in 0..<40 {
+            guard let sample = WordSearchPuzzle.make(from: ["entalpia", "entropia", "adiabática", "isotérmica", "quântica"]) else { continue }
+            for placement in sample.placements {
+                seenDirections.insert(placement.direction)
+                if reversedDirections.contains(placement.direction) { sawReversed = true }
+            }
+        }
+        check("caça-palavras sorteia todas as direções", seenDirections == Set(WordSearchPuzzle.Direction.allCases))
+        check("caça-palavras usa direções invertidas", sawReversed)
+    }
+
+    let vocabulary = WordSearchPuzzle.vocabulary(from: [
+        StudyArtifact(kind: .flashcards, body: "Frente: entalpia é\n\nVerso: função de estado")
+    ])
+    check("vocabulário vem das frentes dos flashcards", vocabulary.contains("entalpia"))
+
+    var htmlWorkspace = Workspace(name: "Revisão <Teste>")
+    let material = CanvasNode(kind: .pdf, title: "Apostila", frame: .default(for: .pdf, origin: .zero))
+    htmlWorkspace.nodes.append(material)
+    htmlWorkspace.studyArtifacts = [
+        StudyArtifact(kind: .flashcards, body: "Frente: O que é <entalpia>?\n\nVerso: Função de estado & energia", sourceNodeID: material.id),
+        StudyArtifact(kind: .question, body: "Explique o ciclo de Carnot.\n\nGabarito: duas isotermas e duas adiabáticas.")
+    ]
+    let html = StudyHTMLExporter.export(workspace: htmlWorkspace)
+    check("html contém flashcards", html.contains("O que é &lt;entalpia&gt;?") && html.contains("Função de estado &amp; energia"))
+    check("html escapa nome da matéria", html.contains("Revisão &lt;Teste&gt;") && !html.contains("<Teste>"))
+    check("html separa gabarito", html.contains("Ver gabarito") && html.contains("duas isotermas"))
+    check("html é página autônoma", html.hasPrefix("<!DOCTYPE html>") && html.contains("viewport"))
+}
+
+
 print("\n===== RESULTADO =====")
 print("Passaram: \(passes) | Falharam: \(failures.count)")
 if failures.isEmpty {
