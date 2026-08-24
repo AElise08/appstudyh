@@ -351,7 +351,7 @@ function viewEstudar(){
   if(!m){
     inner = `<div class="card dropzone" id="dropMain" style="padding:48px;text-align:center" onclick="addMaterialModal()">
       <h3>Adicionar material</h3>
-      <p class="muted small" style="margin:8px 0">Clique para colar um texto, importar um arquivo .txt/.md<br>ou arraste o arquivo aqui. Separe páginas com uma linha <code>---</code>.</p>
+      <p class="muted small" style="margin:8px 0">Clique para começar, ou arraste direto aqui um <strong>PDF</strong>, <strong>EPUB</strong>, .txt ou .md.<br>Também dá para colar texto. Separe páginas com uma linha <code>---</code>.</p>
       <button class="btn pri" style="margin-top:10px">＋ Adicionar material</button></div>`;
   } else {
     const pgs=pages(m); const pg=pgs[Math.min(ui.page,pgs.length-1)] ?? "";
@@ -389,9 +389,9 @@ function delMaterial(id){ if(!confirm("Remover este material? Notas e baralhos c
 
 function addMaterialModal(){
   modal(`<h3>Novo material</h3>
-    <div class="dropzone" id="dropZone">Arraste um arquivo <strong>.txt</strong> ou <strong>.md</strong> aqui<br><span class="tiny dim">ou</span><br>
+    <div class="dropzone" id="dropZone">Arraste <strong>PDF</strong>, <strong>EPUB</strong>, <strong>.txt</strong> ou <strong>.md</strong> aqui<br><span class="tiny dim">ou</span><br>
       <button class="btn tiny" style="margin-top:6px" onclick="document.getElementById('mFile').click()">Importar arquivo</button>
-      <input type="file" id="mFile" accept=".txt,.md,.markdown,text/plain" style="display:none" onchange="materialFromFile(this.files[0])"></div>
+      <input type="file" id="mFile" accept=".txt,.md,.markdown,.pdf,.epub,text/plain,application/pdf,application/epub+zip" style="display:none" onchange="materialFromFile(this.files[0])"></div>
     <div class="field"><label>Título</label><input id="mTitle" placeholder="Ex.: Fotossíntese — aula 3"></div>
     <div class="field"><label>Texto (separe páginas com uma linha ---)</label><textarea id="mText" placeholder="Cole aqui o resumo ou anotação da aula…"></textarea></div>
     <div class="row" style="justify-content:flex-end"><button class="btn" onclick="closeModal()">Cancelar</button>
@@ -401,15 +401,84 @@ function addMaterialModal(){
   dz.addEventListener("dragleave",()=>dz.classList.remove("over"));
   dz.addEventListener("drop",e=>{e.preventDefault();dz.classList.remove("over");materialFromFile(e.dataTransfer.files[0]);});
 }
-function materialFromFile(file){
+function loadScript(src){ return new Promise((res,rej)=>{ const s=document.createElement("script"); s.src=src; s.onload=res; s.onerror=()=>rej(new Error("Falha ao carregar "+src)); document.head.appendChild(s); }); }
+function htmlToText(html){
+  const doc=new DOMParser().parseFromString(html,"text/html");
+  doc.querySelectorAll("script,style,nav,header,footer").forEach(e=>e.remove());
+  doc.body.querySelectorAll("br,p,div,h1,h2,h3,h4,h5,h6,li").forEach(e=>e.insertAdjacentText("afterend","\n"));
+  return (doc.body.textContent||"").replace(/[ \t]+/g," ").replace(/\n{3,}/g,"\n\n").trim();
+}
+const MAX_CHARS=600000;
+async function extractFromFile(file,onProgress){
+  const ext=(file.name.split(".").pop()||"").toLowerCase();
+  if(ext==="pdf") return extractPDF(file,onProgress);
+  if(ext==="epub") return extractEPUB(file,onProgress);
+  if(["txt","md","markdown"].includes(ext)) return {title:file.name.replace(/\.[^.]+$/,""),text:await file.text()};
+  throw new Error("Formato não suportado: ."+ext+" (use PDF, EPUB, TXT ou MD)");
+}
+async function extractPDF(file,onProgress){
+  if(!window.pdfjsLib) await loadScript("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js");
+  pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+  const buf=await file.arrayBuffer();
+  const pdf=await pdfjsLib.getDocument({data:buf}).promise;
+  const maxPages=Math.min(pdf.numPages,300);
+  const parts=[];
+  for(let i=1;i<=maxPages;i++){
+    onProgress(`Extraindo página ${i} de ${maxPages}…`);
+    const page=await pdf.getPage(i);
+    const tc=await page.getTextContent();
+    parts.push(tc.items.map(s=>s.str).join(" ").replace(/\s+/g," ").trim());
+  }
+  let text=parts.join("\n---\n");
+  const truncated=pdf.numPages>maxPages||text.length>=MAX_CHARS;
+  if(text.length>=MAX_CHARS) text=text.slice(0,MAX_CHARS);
+  return {title:file.name.replace(/\.pdf$/i,""),text,truncated};
+}
+async function extractEPUB(file,onProgress){
+  if(!window.JSZip) await loadScript("https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js");
+  const zip=await JSZip.loadAsync(await file.arrayBuffer());
+  const containerFile=zip.file("META-INF/container.xml");
+  if(!containerFile) throw new Error("EPUB inválido (container.xml ausente).");
+  const container=await containerFile.async("string");
+  const opfPath=new DOMParser().parseFromString(container,"text/xml").querySelector("rootfile")?.getAttribute("full-path");
+  if(!opfPath) throw new Error("EPUB inválido (OPF ausente).");
+  const opf=await zip.file(opfPath).async("string");
+  const doc=new DOMParser().parseFromString(opf,"text/xml");
+  const title=doc.querySelector("title")?.textContent||file.name.replace(/\.epub$/i,"");
+  const base=opfPath.includes("/")?opfPath.slice(0,opfPath.lastIndexOf("/")+1):"";
+  const manifest={};
+  doc.querySelectorAll("manifest > item").forEach(it=>manifest[it.getAttribute("id")]=it.getAttribute("href"));
+  const spine=[...doc.querySelectorAll("spine > itemref")].map(ir=>manifest[ir.getAttribute("idref")]).filter(Boolean);
+  const max=Math.min(spine.length,200);
+  const parts=[];
+  for(let i=0;i<max;i++){
+    onProgress(`Extraindo capítulo ${i+1} de ${max}…`);
+    const f=zip.file(decodeURIComponent(base+spine[i]));
+    if(!f) continue;
+    const t=htmlToText(await f.async("string"));
+    if(t.length>40) parts.push(t);
+  }
+  if(!parts.length) throw new Error("Não foi possível extrair texto deste EPUB (pode ser protegido por DRM).");
+  let text=parts.join("\n---\n");
+  const truncated=text.length>=MAX_CHARS;
+  if(truncated) text=text.slice(0,MAX_CHARS);
+  return {title,text,truncated};
+}
+async function materialFromFile(file){
   if(!file) return;
-  const reader=new FileReader();
-  reader.onload=()=>{
-    document.getElementById("mText").value=reader.result;
-    if(!document.getElementById("mTitle").value) document.getElementById("mTitle").value=file.name.replace(/\.(txt|md|markdown)$/i,"");
-    toast("Arquivo carregado — revise e clique em Adicionar.");
-  };
-  reader.readAsText(file);
+  const dz=document.getElementById("dropZone");
+  if(!dz){ addMaterialModal(); }
+  const zone=document.getElementById("dropZone");
+  zone.innerHTML="⏳ Lendo arquivo…";
+  try{
+    const {title,text,truncated}=await extractFromFile(file,p=>{ zone.innerHTML="⏳ "+esc(p); });
+    document.getElementById("mText").value=text;
+    if(!document.getElementById("mTitle").value) document.getElementById("mTitle").value=title;
+    zone.innerHTML="✅ Extraído com sucesso"+(truncated?"<br><span class='tiny'>Arquivo muito grande: parte do conteúdo foi limitada.</span>":"");
+    toast("Arquivo extraído — revise e clique em Adicionar.");
+  }catch(e){
+    zone.innerHTML="⚠️ "+esc(e.message)+"<br><span class='tiny dim'>Tente outro arquivo ou cole o texto abaixo.</span>";
+  }
 }
 function saveMaterial(){
   const title=document.getElementById("mTitle").value.trim();
@@ -921,7 +990,7 @@ function viewAjustes(){
     </div>
     <div class="card" style="margin-top:14px">
       <h3>Sobre</h3>
-      <p class="muted small">Studyh Web — versão navegador do Studyh. App Mac completo em <a href="https://studyh.tech">studyh.tech</a>. Materiais em texto na v1; PDF/EPUB chegam em breve.</p>
+      <p class="muted small">Studyh Web — versão navegador do Studyh. App Mac completo em <a href="https://studyh.tech">studyh.tech</a>. Materiais: PDF, EPUB, TXT e MD — o texto é extraído e fica salvo localmente.</p>
     </div>
   </div>`;
 }
