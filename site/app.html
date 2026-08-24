@@ -21,8 +21,6 @@ input,textarea,select{font:inherit;color:var(--text);background:var(--bg2);borde
 input:focus,textarea:focus,select:focus{border-color:var(--accent)}
 ::placeholder{color:var(--dim)}
 #app{display:flex;flex-direction:column;height:100vh}
-
-/* topbar */
 #topbar{display:flex;align-items:center;gap:12px;padding:10px 16px;background:var(--bg2);border-bottom:1px solid var(--line);flex-wrap:wrap}
 .logo{font-weight:800;font-size:1.05rem;letter-spacing:-.02em}
 .logo span{color:var(--green)}
@@ -35,8 +33,6 @@ input:focus,textarea:focus,select:focus{border-color:var(--accent)}
 #saveState{font-size:.78rem;color:var(--dim)}
 #aiStatus{font-size:.8rem;padding:6px 11px;border-radius:99px;border:1px solid var(--line);color:var(--muted);cursor:pointer}
 #aiStatus.ok{color:var(--green);border-color:rgba(126,240,106,.35)}
-
-/* layout */
 #main{flex:1;display:flex;min-height:0}
 #sidebar{width:230px;min-width:190px;background:var(--bg2);border-right:1px solid var(--line);display:flex;flex-direction:column;padding:12px}
 #sidebar h4{font-size:.72rem;text-transform:uppercase;letter-spacing:.09em;color:var(--dim);margin:4px 6px 8px}
@@ -48,15 +44,11 @@ input:focus,textarea:focus,select:focus{border-color:var(--accent)}
 .ws-item .del:hover{color:var(--red)}
 #view{flex:1;overflow:auto;padding:20px 24px;min-width:0}
 .view{max-width:1100px;margin:0 auto}
-
-/* journey */
 #journey{display:flex;align-items:center;gap:10px;padding:8px 16px;background:rgba(109,179,255,.05);border-bottom:1px solid var(--line);font-size:.82rem;flex-wrap:wrap}
 .jstep{display:flex;align-items:center;gap:5px;color:var(--muted)}
 .jstep.done{color:var(--green)}
 .jarrow{color:var(--dim)}
 #journey .next{margin-left:auto;background:var(--green);color:#0b1018;font-weight:700;padding:6px 14px;border-radius:8px;font-size:.82rem}
-
-/* cards & misc */
 .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}
 .muted{color:var(--muted)} .dim{color:var(--dim)}
 .small{font-size:.85rem} .tiny{font-size:.78rem}
@@ -82,8 +74,6 @@ h2.vt{font-size:1.35rem;margin-bottom:2px}
 .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--card2);border:1px solid var(--line);padding:10px 20px;border-radius:10px;font-size:.9rem;z-index:99;box-shadow:0 8px 30px rgba(0,0,0,.4);animation:pop .18s ease}
 @keyframes pop{from{opacity:0;transform:translateX(-50%) translateY(8px)}}
 hr{border:none;border-top:1px solid var(--line);margin:14px 0}
-
-/* estudar */
 #estudar{display:flex;gap:0;min-height:100%}
 .material-col{flex:1;min-width:0;display:flex;flex-direction:column;gap:12px}
 .assistant{width:360px;min-width:300px;border-left:1px solid var(--line);padding-left:18px;display:flex;flex-direction:column;gap:10px}
@@ -106,38 +96,45 @@ hr{border:none;border-top:1px solid var(--line);margin:14px 0}
 .opt.sel{border-color:var(--accent);background:var(--accent-soft)}
 .opt.right{border-color:var(--green);background:var(--green-soft)}
 .opt.wrong{border-color:var(--red);background:rgba(255,107,122,.12)}
-
-/* mesa/caderno */
-.nb-editor{width:100%;min-height:300px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;line-height:1.7;resize:vertical;white-space:pre-wrap}
+.planrow{display:flex;align-items:center;gap:10px;padding:9px 11px;background:var(--card);border:1px solid var(--line);border-radius:9px;margin-top:7px;font-size:.9rem;cursor:pointer}
+.planrow:hover{border-color:var(--dim)}
+.nb-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.nb-toolbar{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px}
+.nb-toolbar button{padding:5px 10px;border:1px solid var(--line);border-radius:7px;font-size:.85rem;background:var(--card)}
+.nb-toolbar button:hover{border-color:var(--dim)}
+.nb-editor{width:100%;min-height:300px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;line-height:1.7;outline:none;overflow:auto}
+.nb-editor:focus{border-color:var(--accent)}
+.nb-editor h2{font-size:1.4rem;margin:10px 0 4px}
+.nb-editor ul{padding-left:22px}
 .kanban{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
 .kcol{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px;min-height:120px}
 .kcol h5{font-size:.78rem;text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px}
 .kcard{background:var(--card2);border:1px solid var(--line);border-radius:9px;padding:9px 11px;font-size:.88rem;margin-bottom:7px;cursor:grab}
 .kcard.done{opacity:.5;text-decoration:line-through}
-
-/* wordsearch */
 .ws-grid{display:grid;gap:3px;width:max-content}
 .ws-cell{width:30px;height:30px;display:flex;align-items:center;justify-content:center;border-radius:6px;background:var(--card2);font-family:ui-monospace,monospace;font-size:.85rem;cursor:pointer;border:1px solid transparent}
 .ws-cell.found{font-weight:700}
 .ws-cell.start{border-color:var(--accent)}
 .ws-chip{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:99px;font-size:.78rem;font-weight:600;margin:3px;background:var(--card2);border:1px solid var(--line)}
 .ws-chip.found{text-decoration:line-through}
-
-/* matching */
 .match-cols{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .mitem{padding:9px 11px;border:1px solid var(--line);border-radius:9px;background:var(--bg2);font-size:.86rem;text-align:left;margin-bottom:6px;width:100%}
 .mitem.sel{border-color:var(--accent);background:var(--accent-soft)}
 .mitem.ok{border-color:var(--green);background:var(--green-soft);opacity:.6}
-
-/* modal */
+.dropzone{border:2px dashed var(--line);border-radius:10px;padding:18px;text-align:center;color:var(--muted);font-size:.9rem;margin-bottom:12px;transition:.15s}
+.dropzone.over{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
 .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:50}
-.modal{background:var(--bg2);border:1px solid var(--line);border-radius:14px;padding:22px;width:min(560px,92vw);max-height:88vh;overflow:auto}
+.modal{background:var(--bg2);border:1px solid var(--line);border-radius:14px;padding:22px;width:min(600px,92vw);max-height:88vh;overflow:auto}
 .modal h3{margin-bottom:12px}
 .field{margin-bottom:12px}
 .field label{display:block;font-size:.8rem;color:var(--muted);margin-bottom:5px;font-weight:600}
 .field input,.field textarea,.field select{width:100%}
 .field textarea{min-height:180px;resize:vertical}
-
+.radio-row{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.radio-card{flex:1;min-width:200px;border:1px solid var(--line);border-radius:10px;padding:12px;cursor:pointer;text-align:left}
+.radio-card.on{border-color:var(--accent);background:var(--accent-soft)}
+.radio-card .t{font-weight:700;font-size:.92rem}
+.radio-card .d{font-size:.8rem;color:var(--muted)}
 @media (max-width:900px){
   #sidebar{display:none}
   #estudar{flex-direction:column}
@@ -155,7 +152,7 @@ hr{border:none;border-top:1px solid var(--line);margin:14px 0}
     <div class="modes" id="modeTabs"></div>
     <div class="spacer"></div>
     <button class="tbtn" onclick="openSearch()">🔎 Buscar</button>
-    <button id="aiStatus" onclick="openSettings()">IA: não configurada</button>
+    <button id="aiStatus" onclick="setMode('ajustes')">IA: não configurada</button>
     <span id="saveState">salvo</span>
   </div>
   <div id="journey"></div>
@@ -169,12 +166,13 @@ hr{border:none;border-top:1px solid var(--line);margin:14px 0}
 <script>
 "use strict";
 /* ============ estado e persistência ============ */
-const STORE_KEY = "studyh-web-v1";
+const STORE_KEY = "studyh-web-v2";
 const DAILY_NEW_LIMIT = 20;
 let state = load() || seed();
 let ui = { mode:"estudar", matId:null, page:0, deckId:null, fcIndex:0, fcShow:false,
            qIndex:null, qSel:null, qFeedback:null, match:null, wsPuzzle:null, wsFound:new Set(),
-           wsStart:null, chat:[], busy:false, search:"" };
+           wsStart:null, chat:[], busy:false, nbId:null };
+let oai = null; // módulo @openai-oauth/web carregado sob demanda
 
 function save(){ localStorage.setItem(STORE_KEY, JSON.stringify(state)); flashSaved(); }
 let saveTimer;
@@ -183,15 +181,26 @@ function flashSaved(){ document.getElementById("saveState").textContent="salvo";
 function load(){ try{ return JSON.parse(localStorage.getItem(STORE_KEY)); }catch(e){ return null; } }
 function uid(){ return Math.random().toString(36).slice(2,10); }
 function esc(s){ return String(s??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+function migrate(){
+  state.workspaces.forEach(w=>{
+    w.notebooks = (w.notebooks&&w.notebooks.length?w.notebooks:[{id:uid(),title:"Caderno 1",html:"",text:""}])
+      .map(n=>({id:n.id||uid(),title:n.title||"Caderno",html:n.html||"",text:n.text||(n.html?n.html.replace(/<[^>]+>/g," "):"")}));
+    w.activity = w.activity||[]; w.visited = w.visited||{}; w.tasks = w.tasks||[];
+  });
+  state.settings = Object.assign({provider:"api",endpoint:"https://api.openai.com/v1/chat/completions",key:"",model:"gpt-4.1-mini",proxy:"/api/chat",chatgptModel:"gpt-5.4-mini"}, state.settings||{});
+}
+migrate();
 
 function seed(){
   const ws = { id:uid(), name:"Minha matéria", materials:[], notes:[], decks:[], questions:[],
-    tasks:[], reviews:{}, activity:[], visited:{}, notebooks:[{id:uid(), title:"Caderno 1", text:""}] };
-  return { workspaces:[ws], current:ws.id, settings:{ endpoint:"https://api.openai.com/v1/chat/completions", key:"", model:"gpt-4.1-mini" } };
+    tasks:[], reviews:{}, activity:[], visited:{}, notebooks:[{id:uid(), title:"Caderno 1", html:"", text:""}] };
+  return { workspaces:[ws], current:ws.id,
+    settings:{ provider:"api", endpoint:"https://api.openai.com/v1/chat/completions", key:"", model:"gpt-4.1-mini", proxy:"/api/chat", chatgptModel:"gpt-5.4-mini" } };
 }
 function ws(){ return state.workspaces.find(w=>w.id===state.current); }
 function mat(){ const w=ws(); return w.materials.find(m=>m.id===ui.matId) || w.materials[0] || null; }
 function pages(m){ if(!m) return []; return m.text.split(/\n\s*---\s*\n/).map(t=>t.trim()).filter(Boolean); }
+function nb(){ const w=ws(); return w.notebooks.find(n=>n.id===ui.nbId) || w.notebooks[0]; }
 
 /* ============ utilidades ============ */
 function toast(msg){ const t=document.createElement("div"); t.className="toast"; t.textContent=msg; document.body.appendChild(t); setTimeout(()=>t.remove(),2600); }
@@ -199,18 +208,99 @@ function todayKey(d=new Date()){ return d.toISOString().slice(0,10); }
 function introducedToday(){ const k=todayKey(); return Object.values(ws().reviews).filter(r=>r.introduced===k).length; }
 function dueCards(deck){ const now=Date.now(); return deck.cards.filter(c=>{ const r=ws().reviews[c.id]; return !r || r.due<=now; }); }
 function dueCount(deck){ return dueCards(deck).length; }
-function newCount(deck){ const now=Date.now(); return deck.cards.filter(c=>!ws().reviews[c.id]).filter(()=>introducedToday()<DAILY_NEW_LIMIT).length; }
+
+/* ============ ChatGPT OAuth (openai-oauth) ============ */
+async function oaiModule(){
+  if(!oai) oai = await import("https://esm.sh/@openai-oauth/web");
+  return oai;
+}
+async function chatgptCheck(){
+  try{
+    const m = await oaiModule();
+    await m.completeLogin?.();
+    const session = await m.getSession({});
+    return !!session;
+  }catch(e){ return false; }
+}
+async function chatgptLogin(){
+  try{
+    const m = await oaiModule();
+    const result = await m.startLogin();
+    if(result.status==="needs-extension"){
+      modal(`<h3>Instale a extensão Sign in with ChatGPT</h3>
+        <p class="muted small">Para proteger seu login, o Studyh Web usa a extensão oficial open-source do openai-oauth.</p>
+        <div class="row" style="margin:14px 0"><a class="btn blue" href="${result.installUrl}" target="_blank" rel="noreferrer">Instalar extensão</a></div>
+        <p class="small muted">Depois de instalar, volte aqui e clique em “Entrar” de novo.</p>
+        <div class="row" style="justify-content:flex-end"><button class="btn" onclick="closeModal()">Entendi</button></div>`);
+      return;
+    }
+    toast("Conclua o login na janela do OpenAI e volte aqui.");
+    setTimeout(async()=>{ if(await chatgptCheck()){ save(); render(); toast("ChatGPT conectado!"); } }, 4000);
+  }catch(e){ toast("Não foi possível iniciar o login: "+e.message); }
+}
+async function chatgptLogout(){ try{ const m=await oaiModule(); await m.logout?.(); save(); render(); }catch(e){} }
+
+/* ============ IA unificada ============ */
+function aiReady(){
+  if(state.settings.provider==="chatgpt") return !!state.settings.chatgptSigned;
+  return !!state.settings.key;
+}
+function renderAIStatus(){
+  const el=document.getElementById("aiStatus");
+  if(state.settings.provider==="chatgpt") el.textContent = state.settings.chatgptSigned ? "IA: ChatGPT conectado" : "IA: entrar com ChatGPT";
+  else el.textContent = state.settings.key ? "IA: API configurada" : "IA: não configurada";
+  el.className = aiReady() ? "ok" : "";
+}
+async function aiCall(system,user,json=false){
+  const s=state.settings;
+  if(s.provider==="chatgpt"){
+    if(!s.chatgptSigned) throw new Error("Entre com sua conta ChatGPT em Ajustes.");
+    if(!s.proxy) throw new Error("Configure a URL do proxy em Ajustes (o ChatGPT bloqueia chamadas diretas do navegador).");
+    const m = await oaiModule();
+    const headers = await m.openaiAuthHeaders({});
+    const res = await fetch(s.proxy,{ method:"POST",
+      headers:{...headers,"Content-Type":"application/json"},
+      body:JSON.stringify({ model:s.chatgptModel, messages:[{role:"system",content:system},{role:"user",content:user}], json }) });
+    if(!res.ok){ throw new Error("Proxy: HTTP "+res.status+" "+(await res.text().catch(()=>"")).slice(0,180)); }
+    const data=await res.json().catch(()=>null);
+    const text = typeof data==="string" ? data : (data?.text ?? data?.choices?.[0]?.message?.content ?? "");
+    return finish(text,json);
+  }
+  if(!s.key) throw new Error("Configure a IA em Ajustes.");
+  const res=await fetch(s.endpoint,{ method:"POST",
+    headers:{"Content-Type":"application/json","Authorization":"Bearer "+s.key},
+    body:JSON.stringify({ model:s.model, temperature:0.4,
+      messages:[{role:"system",content:system},{role:"user",content:user}] }) });
+  if(!res.ok){ const t=await res.text().catch(()=>""); throw new Error("HTTP "+res.status+" "+t.slice(0,180)); }
+  const data=await res.json();
+  return finish(data.choices?.[0]?.message?.content?.trim() || "",json);
+  function finish(text,json){
+    if(json){ const match=text.match(/\{[\s\S]*\}|\[[\s\S]*\]/); if(!match) throw new Error("A IA não retornou dados no formato esperado."); return JSON.parse(match[0]); }
+    return text;
+  }
+}
+function pedagogicalContract(){ return `Você é o tutor do Studyh. Trabalhe somente a partir do material fornecido e admita quando ele não contiver a informação.
+NUNCA entregue a resposta pronta de exercício: peça a tentativa do estudante primeiro e ofereça apenas orientação conceitual.
+Use linguagem simples, frases curtas, em português. Explique termos difíceis. Sem alertas genéricos e sem inventar fatos.`; }
+function currentContext(){
+  const m=mat(); if(!m) return "";
+  const pgs=pages(m); return pgs[Math.min(ui.page,pgs.length-1)] ?? "";
+}
+function guardAI(){ if(!aiReady()){ setMode("ajustes"); toast("Configure a IA em Ajustes para usar isso."); return false; }
+  if(!mat()){ toast("Adicione um material primeiro."); return false; } return true; }
+function withBusy(fn){ return async()=>{ if(ui.busy) return; ui.busy=true;
+  try{ await fn(); }catch(e){ pushChat("ai","⚠️ "+e.message); } finally{ ui.busy=false; } }; }
 
 /* ============ render raiz ============ */
 function render(){
-  renderTabs(); renderSidebar(); renderJourney();
+  renderTabs(); renderSidebar(); renderJourney(); renderAIStatus();
   const v = document.getElementById("view");
   if(ui.mode==="estudar") v.innerHTML = viewEstudar();
   else if(ui.mode==="caderno") v.innerHTML = viewCaderno();
   else if(ui.mode==="progresso") v.innerHTML = viewProgresso();
   else if(ui.mode==="ajustes") v.innerHTML = viewAjustes();
-  if(ui.mode==="estudar") renderAssistantDynamic();
-  renderAIStatus();
+  if(ui.mode==="estudar"){ renderChat(); renderDecks(); renderQuestionFlow(); }
+  if(ui.mode==="caderno"){ const ed=document.getElementById("nbEditor"); if(ed) ed.innerHTML = nb().html || esc(nb().text||"").replace(/\n/g,"<br>"); }
 }
 function renderTabs(){
   const modes=[["estudar","Estudar"],["caderno","Caderno"],["progresso","Progresso"],["ajustes","Ajustes"]];
@@ -227,40 +317,46 @@ function renderSidebar(){
     </div>`).join("") +
     `<div class="ws-item" onclick="addWS()">＋ Nova matéria</div>`;
 }
-function pickWS(id){ state.current=id; ui={...ui, matId:null, page:0, deckId:null, chat:[], qIndex:null, qFeedback:null, match:null, wsPuzzle:null}; save(); render(); }
-function addWS(){ const w={id:uid(),name:"Matéria "+(state.workspaces.length+1),materials:[],notes:[],decks:[],questions:[],tasks:[],reviews:{},activity:[],visited:{},notebooks:[{id:uid(),title:"Caderno 1",text:""}]}; state.workspaces.push(w); state.current=w.id; ui={...ui,matId:null}; save(); render(); }
+function pickWS(id){ state.current=id; ui={...ui, matId:null, page:0, deckId:null, chat:[], qIndex:null, qFeedback:null, match:null, wsPuzzle:null, nbId:null}; save(); render(); }
+function addWS(){ const w={id:uid(),name:"Matéria "+(state.workspaces.length+1),materials:[],notes:[],decks:[],questions:[],tasks:[],reviews:{},activity:[],visited:{},notebooks:[{id:uid(),title:"Caderno 1",html:"",text:""}]}; state.workspaces.push(w); state.current=w.id; ui={...ui,matId:null,nbId:null}; save(); render(); }
 function delWS(id){ if(state.workspaces.length<=1){ toast("Precisa de pelo menos uma matéria."); return; }
   if(!confirm("Apagar esta matéria com todo o conteúdo?")) return;
   state.workspaces=state.workspaces.filter(w=>w.id!==id); if(state.current===id) state.current=state.workspaces[0].id; save(); render(); }
 
+const JOURNEY_ACTIONS = {
+  material:()=>addMaterialModal(), tentativa:()=>setMode("estudar"),
+  orientacao:()=>setMode("estudar"), revisar:()=>setMode("estudar"), progresso:()=>setMode("progresso")
+};
 function renderJourney(){
   const w=ws(); const m=mat();
-  const hasMat = !!m;
-  const hasAttempt = w.notes.length>0 || Object.keys(w.visited||{}).length>0;
-  const hasAI = w.activity.some(a=>a.kind==="ai");
-  const hasReview = w.activity.some(a=>a.kind==="review");
+  const hasMat=!!m;
+  const hasAttempt=w.notes.length>0||Object.keys(w.visited||{}).length>0;
+  const hasAI=w.activity.some(a=>a.kind==="ai");
+  const hasReview=w.activity.some(a=>a.kind==="review");
   const steps=[["1","Material",hasMat],["2","Tentativa",hasAttempt],["3","Orientação",hasAI],["4","Revisão",hasReview]];
-  let next="Adicionar material", act=()=>addMaterialModal();
-  if(hasMat && !hasAttempt){ next="Fazer uma tentativa"; act=()=>setMode("estudar"); }
-  else if(hasMat && !hasAI){ next="Pedir orientação"; act=()=>setMode("estudar"); }
-  else if(!hasReview){ next="Revisar agora"; act=()=>setMode("estudar"); }
-  else { next="Ver progresso"; act=()=>setMode("progresso"); }
+  let next="Adicionar material", act="material";
+  if(hasMat&&!hasAttempt){ next="Fazer uma tentativa"; act="tentativa"; }
+  else if(hasMat&&!hasAI){ next="Pedir orientação"; act="orientacao"; }
+  else if(!hasReview){ next="Revisar agora"; act="revisar"; }
+  else { next="Ver progresso"; act="progresso"; }
   document.getElementById("journey").innerHTML =
     steps.map(([n,t,done],i)=>`${i?'<span class="jarrow">›</span>':''}<span class="jstep ${done?'done':''}">${done?'✓':n+'. '} ${t}</span>`).join("")+
-    `<button class="next" onclick="(${act.toString()})()">${next}</button>`;
+    `<button class="next" onclick="JOURNEY_ACTIONS.${act}()">${next}</button>`;
 }
 
 /* ============ ESTUDAR ============ */
 function viewEstudar(){
-  const m = mat(); const w = ws();
+  const m=mat(); const w=ws();
   let inner;
   if(!m){
-    inner = `<div class="card" style="text-align:center;padding:48px">
-      <h3>Nenhum material ainda</h3>
-      <p class="muted small" style="margin:8px 0 16px">Cole um resumo, anotação de aula ou texto de estudo. Separe páginas com uma linha contendo <code>---</code>.</p>
-      <button class="btn pri" onclick="addMaterialModal()">＋ Adicionar material</button></div>`;
+    inner = `<div class="card dropzone" id="dropMain" style="padding:48px;text-align:center" onclick="addMaterialModal()">
+      <h3>Adicionar material</h3>
+      <p class="muted small" style="margin:8px 0">Clique para colar um texto, importar um arquivo .txt/.md<br>ou arraste o arquivo aqui. Separe páginas com uma linha <code>---</code>.</p>
+      <button class="btn pri" style="margin-top:10px">＋ Adicionar material</button></div>`;
   } else {
-    const pgs = pages(m); const pg = pgs[Math.min(ui.page, pgs.length-1)] ?? "";
+    const pgs=pages(m); const pg=pgs[Math.min(ui.page,pgs.length-1)] ?? "";
+    w.visited[m.id]=w.visited[m.id]||new Set();
+    w.visited[m.id]=Array.from(new Set([...(w.visited[m.id]||[]),ui.page]));
     inner = `
       <div class="mat-tabs">${w.materials.map(x=>
         `<button class="mat-tab ${x.id===m.id?'on':''}" onclick="ui.matId='${x.id}';ui.page=0;render()">📄 ${esc(x.title)}</button>`).join("")}
@@ -282,35 +378,38 @@ function viewEstudar(){
   }
   return `<div id="estudar"><div class="material-col">${inner}</div>${assistantHTML()}</div>`;
 }
-function pageSelected(){
-  const sel = window.getSelection().toString().trim();
-  ui.selection = sel.length>3 ? sel : "";
-}
-function noteFromSelection(){
-  const t = ui.selection || "";
-  if(!t){ toast("Selecione um trecho do texto primeiro."); return; }
-  createNote(t);
-}
-function addNoteWhole(){
-  const m=mat(); if(!m) return;
-  const pg = pages(m)[Math.min(ui.page,pages(m).length-1)] ?? "";
-  createNote(pg.slice(0,400));
-}
-function createNote(text){
-  const w=ws();
-  w.notes.unshift({id:uid(), matId:mat().id, page:pages(mat()).length>1?ui.page:null, text, at:Date.now()});
-  w.activity.push({kind:"attempt",at:Date.now()});
-  save(); render(); toast("Nota criada.");
-}
+function pageSelected(){ const sel=window.getSelection().toString().trim(); ui.selection=sel.length>3?sel:""; }
+function noteFromSelection(){ const t=ui.selection||""; if(!t){ toast("Selecione um trecho do texto primeiro."); return; } createNote(t); }
+function addNoteWhole(){ const m=mat(); if(!m) return; createNote((pages(m)[Math.min(ui.page,pages(m).length-1)]??"").slice(0,400)); }
+function createNote(text){ const w=ws();
+  w.notes.unshift({id:uid(),matId:mat().id,page:pages(mat()).length>1?ui.page:null,text,at:Date.now()});
+  w.activity.push({kind:"attempt",at:Date.now()}); save(); render(); toast("Nota criada."); }
 function delMaterial(id){ if(!confirm("Remover este material? Notas e baralhos continuam salvos.")) return;
   const w=ws(); w.materials=w.materials.filter(x=>x.id!==id); if(ui.matId===id) ui.matId=null; save(); render(); }
 
 function addMaterialModal(){
   modal(`<h3>Novo material</h3>
+    <div class="dropzone" id="dropZone">Arraste um arquivo <strong>.txt</strong> ou <strong>.md</strong> aqui<br><span class="tiny dim">ou</span><br>
+      <button class="btn tiny" style="margin-top:6px" onclick="document.getElementById('mFile').click()">Importar arquivo</button>
+      <input type="file" id="mFile" accept=".txt,.md,.markdown,text/plain" style="display:none" onchange="materialFromFile(this.files[0])"></div>
     <div class="field"><label>Título</label><input id="mTitle" placeholder="Ex.: Fotossíntese — aula 3"></div>
     <div class="field"><label>Texto (separe páginas com uma linha ---)</label><textarea id="mText" placeholder="Cole aqui o resumo ou anotação da aula…"></textarea></div>
     <div class="row" style="justify-content:flex-end"><button class="btn" onclick="closeModal()">Cancelar</button>
     <button class="btn pri" onclick="saveMaterial()">Adicionar</button></div>`);
+  const dz=document.getElementById("dropZone");
+  dz.addEventListener("dragover",e=>{e.preventDefault();dz.classList.add("over");});
+  dz.addEventListener("dragleave",()=>dz.classList.remove("over"));
+  dz.addEventListener("drop",e=>{e.preventDefault();dz.classList.remove("over");materialFromFile(e.dataTransfer.files[0]);});
+}
+function materialFromFile(file){
+  if(!file) return;
+  const reader=new FileReader();
+  reader.onload=()=>{
+    document.getElementById("mText").value=reader.result;
+    if(!document.getElementById("mTitle").value) document.getElementById("mTitle").value=file.name.replace(/\.(txt|md|markdown)$/i,"");
+    toast("Arquivo carregado — revise e clique em Adicionar.");
+  };
+  reader.readAsText(file);
 }
 function saveMaterial(){
   const title=document.getElementById("mTitle").value.trim();
@@ -321,14 +420,7 @@ function saveMaterial(){
 }
 
 /* ============ assistente / IA ============ */
-function aiReady(){ return !!state.settings.key; }
-function renderAIStatus(){
-  const el=document.getElementById("aiStatus");
-  el.textContent = aiReady() ? "IA: configurada" : "IA: não configurada";
-  el.className = aiReady() ? "ok" : "";
-}
 function assistantHTML(){
-  const w=ws();
   return `<div class="assistant">
     <div class="row"><strong>Studyh</strong><span class="spacer"></span>
       <button class="btn tiny" onclick="ui.chat=[];render()">Nova conversa</button></div>
@@ -337,7 +429,7 @@ function assistantHTML(){
       <button class="btn" onclick="aiFlashcards()">Flashcards</button>
       <button class="btn" onclick="aiQuestion()">Criar questão</button>
     </div>
-    <div class="chat" id="chatBox">${ui.chat.map(m=>`<div class="msg ${m.role}">${esc(m.content)}</div>`).join("")}</div>
+    <div class="chat" id="chatBox"></div>
     <div class="row">
       <input class="grow" id="chatInput" placeholder="${aiReady()?"Pergunte sobre o material…":"Configure a IA para conversar"}"
         onkeydown="if(event.key==='Enter')sendChat()" ${aiReady()?"":"disabled"}>
@@ -346,38 +438,13 @@ function assistantHTML(){
     <div id="revisaoArea"></div>
   </div>`;
 }
-function renderAssistantDynamic(){ renderChat(); renderDecks(); renderQuestionFlow(); }
 function renderChat(){
   const box=document.getElementById("chatBox"); if(!box) return;
   box.innerHTML = ui.chat.map(m=>`<div class="msg ${m.role}">${esc(m.content)}</div>`).join("") ||
     `<div class="dim small">Peça uma explicação simples da página, faça uma pergunta ou transforme o que já leu em revisão.</div>`;
-  box.scrollTop = box.scrollHeight;
+  box.scrollTop=box.scrollHeight;
 }
 function pushChat(role,content){ ui.chat.push({role,content}); renderChat(); }
-
-async function aiCall(system,user,json=false){
-  const s=state.settings;
-  const res=await fetch(s.endpoint,{ method:"POST",
-    headers:{"Content-Type":"application/json","Authorization":"Bearer "+s.key},
-    body:JSON.stringify({ model:s.model, temperature:0.4,
-      messages:[{role:"system",content:system},{role:"user",content:user}] }) });
-  if(!res.ok){ const t=await res.text().catch(()=>""); throw new Error("HTTP "+res.status+" "+t.slice(0,180)); }
-  const data=await res.json();
-  const text=data.choices?.[0]?.message?.content?.trim() || "";
-  if(json){ const match=text.match(/\{[\s\S]*\}|\[[\s\S]*\]/); if(!match) throw new Error("A IA não retornou dados no formato esperado."); return JSON.parse(match[0]); }
-  return text;
-}
-function pedagogicalContract(){ return `Você é o tutor do Studyh. Trabalhe somente a partir do material fornecido e admita quando ele não contiver a informação.
-NUNCA entregue a resposta pronta de exercício: peça a tentativa do estudante primeiro e ofereça apenas orientação conceitual.
-Use linguagem simples, frases curtas, em português. Explique termos difíceis. Sem alertas genéricos e sem inventar fatos.`; }
-function currentContext(){
-  const m=mat(); if(!m) return "";
-  const pgs=pages(m); return pgs[Math.min(ui.page,pgs.length-1)] ?? "";
-}
-function guardAI(){ if(!aiReady()){ openSettings(); toast("Configure a IA em Ajustes para usar isso."); return false; }
-  if(!mat()){ toast("Adicione um material primeiro."); return false; } return true; }
-function withBusy(fn){ return async()=>{ if(ui.busy) return; ui.busy=true;
-  try{ await fn(); }catch(e){ pushChat("ai","⚠️ "+e.message); } finally{ ui.busy=false; } }; }
 
 const aiExplain = withBusy(async()=>{
   if(!guardAI()) return;
@@ -406,7 +473,7 @@ const aiQuestion = withBusy(async()=>{
     `Crie UMA questão de múltipla escolha (A–D) sobre um aspecto diferente destas já usadas: ${JSON.stringify(used)}.
 A alternativa correta deve estar no trecho; as distratoras plausíveis. Responda SOMENTE com JSON:
 {"stem":"enunciado","options":["a","b","c","d"],"correct":0,"why":"explicação curta da correta"}\n\nTrecho:\n${ctx.slice(0,6000)}`,true);
-  if(typeof data.correct!=="number" || !Array.isArray(data.options)) throw new Error("Questão em formato inesperado.");
+  if(typeof data.correct!=="number"||!Array.isArray(data.options)) throw new Error("Questão em formato inesperado.");
   const w=ws(); w.questions.push({id:uid(),matId:mat().id,stem:data.stem,options:data.options,correct:data.correct,why:data.why||"",createdAt:Date.now()});
   w.activity.push({kind:"ai",at:Date.now()}); ui.qIndex=w.questions.length-1; ui.qSel=null; ui.qFeedback=null;
   save(); render(); toast("Questão criada — responda antes de ver!");
@@ -414,13 +481,11 @@ A alternativa correta deve estar no trecho; as distratoras plausíveis. Responda
 function sendChat(){
   const input=document.getElementById("chatInput");
   const msg=input.value.trim(); if(!msg||!aiReady()) return;
-  input.value="";
-  pushChat("user",msg);
+  input.value=""; pushChat("user",msg);
   withBusy(async()=>{
     const guard=/\b(resposta|gabarito|me\s*d[áa]|qual\s*é\s*a\s*resposta)\b/i.test(msg);
-    const ctx=currentContext();
-    const extra = guard ? "\n\nO estudante pode estar pedindo a resposta pronta. Se for o caso, peça a tentativa dele primeiro e ofereça apenas uma pista." : "";
-    const r=await aiCall(pedagogicalContract(),`Pergunta do estudante: ${msg}\n\nTrecho atual do material:\n${ctx.slice(0,6000)}${extra}`);
+    const extra=guard?"\n\nO estudante pode estar pedindo a resposta pronta. Se for o caso, peça a tentativa dele primeiro e ofereça apenas uma pista.":"";
+    const r=await aiCall(pedagogicalContract(),`Pergunta do estudante: ${msg}\n\nTrecho atual do material:\n${currentContext().slice(0,6000)}${extra}`);
     ws().activity.push({kind:"ai",at:Date.now()}); save(); renderJourney(); pushChat("ai",r);
   })();
 }
@@ -429,7 +494,7 @@ function sendChat(){
 function renderDecks(){
   const el=document.getElementById("revisaoArea"); if(!el) return;
   const w=ws();
-  if(!w.decks.length && !w.questions.length){
+  if(!w.decks.length&&!w.questions.length){
     el.innerHTML=`<hr><div class="dim small">Flashcards e questões criados aparecerão aqui para revisão.</div>`; return;
   }
   let html=`<hr><div class="tiny dim" style="margin-bottom:4px">REVISÃO</div>`;
@@ -439,6 +504,7 @@ function renderDecks(){
       <button class="btn tiny ${ui.deckId===d.id?'pri':''}" onclick="openDeck('${d.id}')">Revisar</button></div>`;
   });
   w.questions.forEach((q,i)=>{
+    if(q.open) return;
     html+=`<div class="deckrow"><span>❓ ${esc(q.stem.slice(0,60))}…</span><span class="spacer"></span>
       <button class="btn tiny" onclick="ui.qIndex=${i};ui.qSel=null;ui.qFeedback=null;render()">Rever</button></div>`;
   });
@@ -456,9 +522,8 @@ function deckPlayer(deck){
   const cards=orderedCards(deck);
   if(ui.match) return matchingHTML(deck);
   if(!cards.length) return `<div class="card small muted" style="margin-top:8px">Nada para revisar agora neste baralho ✓
-    <button class="btn tiny" style="margin-left:8px" onclick="ui.match=true;render()">Jogar associação</button></div>`;
-  const i=Math.min(ui.fcIndex,cards.length-1); const c=cards[i];
-  const show=ui.fcShow;
+    <button class="btn tiny" style="margin-left:8px" onclick="ui.match=buildMatch(deckById('${deck.id}'));render()">Jogar associação</button></div>`;
+  const i=Math.min(ui.fcIndex,cards.length-1); const c=cards[i]; const show=ui.fcShow;
   return `<div class="fc" style="margin-top:8px">
     <div class="label">${show?"VERSO":"FRENTE"} · ${i+1} de ${cards.length}</div>
     <div class="body">${esc(show?c.back:c.front)}</div>
@@ -468,7 +533,7 @@ function deckPlayer(deck){
       <button class="btn pri" onclick="rateCard('${deck.id}','${c.id}','good')">Bom</button>
       <button class="btn" onclick="rateCard('${deck.id}','${c.id}','easy')">Fácil</button></div>
     <div class="tiny dim" style="margin-top:6px">Vire e avalie — a revisão espaçada agenda a próxima volta.</div>`:""}
-    <div style="margin-top:10px"><button class="btn tiny" onclick="ui.match=true;render()">🧩 Associar em vez de repetir</button></div>
+    <div style="margin-top:10px"><button class="btn tiny" onclick="ui.match=buildMatch(deckById('${deck.id}'));render()">🧩 Associar em vez de repetir</button></div>
   </div>`;
 }
 function rateCard(deckId,cardId,rating){
@@ -482,8 +547,33 @@ function rateCard(deckId,cardId,rating){
   w.activity.push({kind:"review",at:now});
   ui.fcShow=false; ui.fcIndex++; save(); render();
 }
+function deckById(id){ return ws().decks.find(d=>d.id===id); }
+function buildMatch(deck){
+  const seen=new Set(); const pairs=[];
+  for(const c of dueCards(deck).concat(deck.cards)){
+    if(pairs.length>=6) break;
+    if(seen.has(c.front)||seen.has(c.back)) continue;
+    seen.add(c.front); seen.add(c.back);
+    pairs.push({id:c.id,front:c.front,back:c.back});
+  }
+  const shuf=a=>a.map(x=>[Math.random(),x]).sort((p,q)=>p[0]-q[0]).map(p=>p[1]);
+  const byFront={},byBack={}; pairs.forEach(p=>{byFront[p.front]=p.id;byBack[p.back]=p.id;});
+  return {pairs,fronts:shuf(pairs.map(p=>p.front)),backs:shuf(pairs.map(p=>p.back)),byFront,byBack,sel:null,wrong:null,ok:new Set(),attempts:0};
+}
+function matchTap(deckId,side,text){
+  const M=ui.match; if(!M) return;
+  if(side==="front"){ M.sel=M.sel===text?null:text; }
+  else{
+    if(!M.sel) return;
+    M.attempts++;
+    const fid=M.byFront[M.sel],bid=M.byBack[text];
+    if(fid&&fid===bid){ M.ok.add(fid); M.sel=null; M.wrong=null; }
+    else{ M.wrong=text; M.sel=null; setTimeout(()=>{ if(ui.match&&ui.match.wrong===text){ui.match.wrong=null;render();} },500); }
+  }
+  render();
+}
 function matchingHTML(deck){
-  if(!ui.match) ui.match = buildMatch(deck);
+  if(!ui.match) ui.match=buildMatch(deck);
   const M=ui.match;
   const done=M.pairs.filter(p=>M.ok.has(p.id)).length;
   let html=`<div class="card" style="margin-top:8px">
@@ -504,37 +594,10 @@ function matchingHTML(deck){
   }
   return html;
 }
-function deckById(id){ return ws().decks.find(d=>d.id===id); }
-function buildMatch(deck){
-  const seen=new Set(); const pairs=[];
-  for(const c of dueCards(deck).concat(deck.cards)){
-    if(pairs.length>=6) break;
-    if(seen.has(c.front)||seen.has(c.back)) continue;
-    seen.add(c.front); seen.add(c.back);
-    pairs.push({id:c.id,front:c.front,back:c.back});
-  }
-  const shuf=a=>a.map(x=>[Math.random(),x]).sort((p,q)=>p[0]-q[0]).map(p=>p[1]);
-  const byFront={},byBack={}; pairs.forEach(p=>{byFront[p.front]=p.id;byBack[p.back]=p.id;});
-  return {pairs,fronts:shuf(pairs.map(p=>p.front)),backs:shuf(pairs.map(p=>p.back)),byFront,byBack,sel:null,wrong:null,ok:new Set(),attempts:0};
-}
-function matchTap(deckId,side,text){
-  const M=ui.match; if(!M) return;
-  if(side==="front"){ M.sel = M.sel===text?null:text; }
-  else{
-    if(!M.sel) return;
-    M.attempts++;
-    const fid=M.byFront[M.sel], bid=M.byBack[text];
-    if(fid&&fid===bid){ M.ok.add(fid); M.sel=null; M.wrong=null; }
-    else{ M.wrong=text; M.sel=null; setTimeout(()=>{ if(ui.match&&ui.match.wrong===text){ui.match.wrong=null;render();} },500); }
-  }
-  render();
-}
-
 function renderQuestionFlow(){
   const w=ws(); const el=document.getElementById("revisaoArea");
-  if(ui.qIndex==null || !w.questions[ui.qIndex]) return;
+  if(ui.qIndex==null||!w.questions[ui.qIndex]) return;
   const q=w.questions[ui.qIndex];
-  const host=document.createElement("div"); el.prepend(host);
   const labels=["A","B","C","D","E"];
   let html=`<div class="card" style="margin:8px 0"><div class="tiny dim" style="margin-bottom:6px">RESPONDA ANTES DE VERIFICAR</div>
     <div>${esc(q.stem)}</div>`;
@@ -552,53 +615,87 @@ function renderQuestionFlow(){
       <div class="row" style="margin-top:8px"><button class="btn tiny" onclick="ui.qIndex=null;ui.qFeedback=null;render()">Fechar</button></div>`;
   }
   html+=`</div>`;
-  host.outerHTML=html;
+  const host=document.createElement("div"); host.innerHTML=html;
+  el.prepend(host.firstElementChild);
 }
 function answerQ(i){ if(ui.qFeedback!=null) return; ui.qSel=i; render(); }
 function verifyQ(){
   const w=ws(); const q=w.questions[ui.qIndex]; if(q==null||ui.qSel==null) return;
-  ui.qFeedback=true;
-  w.activity.push({kind:"review",at:Date.now()});
+  ui.qFeedback=true; w.activity.push({kind:"review",at:Date.now()});
   save(); render();
   if(ui.qSel!==q.correct) toast("Tente reler a explicação e entender o porquê.");
 }
 
-/* ============ CADERNO ============ */
+/* ============ CADERNO (rico, múltiplos) ============ */
 function viewCaderno(){
-  const w=ws(); const nb=w.notebooks[0]||{title:"Caderno 1",text:""};
+  const w=ws(); const n=nb();
   return `<div class="view">
-    <div class="row"><h2 class="vt grow">📓 ${esc(nb.title)}</h2></div>
-    <p class="muted small" style="margin:4px 0 10px">Escreva livre. Selecione um parágrafo (ou deixe o cursor nele) e transforme em item de revisão.</p>
-    <textarea class="nb-editor" id="nbText" oninput="notebookEdited(this.value)">${esc(nb.text)}</textarea>
+    <div class="nb-tabs">
+      ${w.notebooks.map(x=>`<button class="mat-tab ${x.id===n.id?'on':''}" onclick="ui.nbId='${x.id}';render()">📓 ${esc(x.title)}</button>`).join("")}
+      <button class="mat-tab" onclick="addNotebook()">＋</button>
+      ${w.notebooks.length>1?`<button class="mat-tab" onclick="delNotebook('${n.id}')">✕</button>`:""}
+      <button class="mat-tab" onclick="renameNotebook()">✏️</button>
+    </div>
+    <div class="nb-toolbar">
+      <button onclick="fmt('bold')"><strong>B</strong></button>
+      <button onclick="fmt('italic')"><em>I</em></button>
+      <button onclick="fmt('underline')"><u>U</u></button>
+      <button onclick="fmt('formatBlock','h2')">Título</button>
+      <button onclick="fmt('formatBlock','p')">Texto</button>
+      <button onclick="fmt('insertUnorderedList')">• Lista</button>
+      <button onclick="insertChecklist()">☐ Tarefa</button>
+      <span class="spacer"></span>
+      <span class="dim small" id="nbMsg"></span>
+    </div>
+    <div class="nb-editor" id="nbEditor" contenteditable="true" oninput="notebookEdited()" onkeyup="saveCaret()" onmouseup="saveCaret()"></div>
     <div class="row wrap" style="margin-top:10px">
       <button class="btn" onclick="nbTransform('flashcard')">🃏 → Flashcard</button>
       <button class="btn" onclick="nbTransform('tarefa')">☑️ → Tarefa</button>
       <button class="btn" onclick="nbTransform('questão')">❓ → Questão</button>
-      <span class="dim small" id="nbMsg"></span>
     </div>
     <hr>
     <div class="grid2">
       <div><h3 class="small" style="margin-bottom:8px">Flashcards do caderno</h3>
         ${w.decks.length?w.decks.map(d=>`<div class="deckrow">🃏 ${esc(d.title)}<span class="spacer"></span><span class="tiny dim">${d.cards.length} cartões</span></div>`).join(""):`<div class="dim small">Nenhum ainda.</div>`}</div>
-      <div><h3 class="small" style="margin-bottom:8px">Questões do caderno</h3>
-        ${w.questions.length?w.questions.map(q=>`<div class="deckrow">❓ ${esc(q.stem.slice(0,70))}…</div>`).join(""):`<div class="dim small">Nenhuma ainda.</div>`}</div>
+      <div><h3 class="small" style="margin-bottom:8px">Tarefas e questões</h3>
+        ${(w.questions.filter(q=>q.open).length||0)?w.questions.filter(q=>q.open).map(q=>`<div class="deckrow">❓ ${esc(q.stem.slice(0,70))}</div>`).join("")+"":""}
+        ${w.questions.some(q=>q.open)?"":`<div class="dim small">Nada ainda. Transforme parágrafos acima.</div>`}</div>
     </div>
   </div>`;
 }
-function notebookEdited(v){ ws().notebooks[0].text=v; debouncedSave(); }
-function nbParagraph(){
-  const ta=document.getElementById("nbText"); if(!ta) return null;
-  const pos=ta.selectionStart; const text=ta.value;
-  if(!text.trim()){ nbMsg("O caderno está vazio."); return null; }
-  let start=text.lastIndexOf("\n",Math.max(0,pos-1))+1;
-  let end=text.indexOf("\n",pos); if(end<0) end=text.length;
-  const p=text.slice(start,end).trim();
-  if(!p){ nbMsg("O cursor está numa linha vazia."); return null; }
-  return p;
+function addNotebook(){ const w=ws(); const n={id:uid(),title:"Caderno "+(w.notebooks.length+1),html:"",text:""}; w.notebooks.push(n); ui.nbId=n.id; save(); render(); }
+function delNotebook(id){ if(!confirm("Excluir este caderno?")) return; const w=ws(); w.notebooks=w.notebooks.filter(n=>n.id!==id); ui.nbId=null; save(); render(); }
+function renameNotebook(){ const n=nb(); const v=prompt("Nome do caderno:",n.title); if(v&&v.trim()){ n.title=v.trim(); save(); render(); } }
+function fmt(cmd,val){ document.getElementById("nbEditor").focus(); document.execCommand(cmd,false,val||null); notebookEdited(); }
+function insertChecklist(){ fmt("insertHTML",'<div>☐ </div>'); }
+function notebookEdited(){
+  const ed=document.getElementById("nbEditor"); if(!ed) return;
+  const n=nb(); n.html=ed.innerHTML; n.text=ed.innerText||"";
+  debouncedSave();
 }
-function nbMsg(m){ const el=document.getElementById("nbMsg"); if(el) el.textContent=m; setTimeout(()=>{ if(el) el.textContent=""; },4000); }
+let lastCaretBlock=null;
+function saveCaret(){
+  const sel=window.getSelection();
+  if(!sel.rangeCount) return;
+  let node=sel.getRangeAt(0).startContainer;
+  lastCaretBlock = node.nodeType===3?node.parentElement:node;
+}
+function nbBlockText(){
+  const sel=window.getSelection();
+  if(sel && sel.rangeCount && !sel.isCollapsed) return sel.toString().trim();
+  let el=lastCaretBlock;
+  const ed=document.getElementById("nbEditor");
+  if(el&&ed&&ed.contains(el)){
+    const block=el.closest("div,p,li,h2,h1")||el;
+    const t=block.innerText||block.textContent||"";
+    if(t.trim()) return t.trim();
+  }
+  if(ed){ const t=ed.innerText||""; const lines=t.split("\n").filter(l=>l.trim()); return lines.length?lines[lines.length-1].trim():null; }
+  return null;
+}
 function nbTransform(kind){
-  const p=nbParagraph(); if(!p) return;
+  const p=nbBlockText();
+  if(!p){ nbMsg("Selecione ou posicione o cursor num parágrafo."); return; }
   const w=ws();
   if(kind==="flashcard"){
     let front=p,back="";
@@ -614,28 +711,39 @@ function nbTransform(kind){
     w.questions.push({id:uid(),stem:p,options:[],correct:-1,why:"",createdAt:Date.now(),open:true});
     nbMsg("Questão registrada — use a IA no Estudar para corrigir sua resposta.");
   }
-  save(); render();
+  save();
 }
+function nbMsg(m){ const el=document.getElementById("nbMsg"); if(el) el.textContent=m; setTimeout(()=>{ if(document.getElementById("nbMsg")===el) el.textContent=""; },4000); }
 
 /* ============ PROGRESSO ============ */
 function viewProgresso(){
   const w=ws();
-  const decks=w.decks; let due=0,total=0;
-  decks.forEach(d=>{ total+=d.cards.length; due+=dueCount(d); });
+  let due=0,total=0;
+  w.decks.forEach(d=>{ total+=d.cards.length; due+=dueCount(d); });
   const practicedToday=w.activity.filter(a=>a.kind==="review"&&todayKey(new Date(a.at))===todayKey()).length;
   const rated=Object.values(w.reviews).filter(r=>r.last);
-  const good=rated.filter(r=>r.last!=="hard").length;
-  const retention=rated.length?Math.round(100*good/rated.length)+"%":"—";
-  const notesCount=w.notes.length;
+  const retention=rated.length?Math.round(100*rated.filter(r=>r.last!=="hard").length/rated.length)+"%":"—";
+  const openTasks=w.tasks.filter(t=>!t.done).sort((a,b)=>["high","normal","low"].indexOf(a.priority)-["high","normal","low"].indexOf(b.priority));
+  const firstDeck=w.decks.find(d=>dueCount(d)>0);
+  const firstQuestion=w.questions.find(q=>!q.open);
+  const actLabels={ai:"Orientação da IA",review:"Revisão feita",attempt:"Tentativa/nota"};
   return `<div class="view">
-    <h2 class="vt">Meu Progresso</h2><p class="muted small">${esc(w.name)}</p>
-    <div class="grid4" style="margin:14px 0">
+    <div class="row"><div><h2 class="vt">Meu Progresso</h2><p class="muted small">${esc(w.name)}</p></div><span class="spacer"></span></div>
+    <div class="card" style="margin:14px 0">
+      <div class="row"><strong>Hoje</strong><span class="spacer"></span>
+        <button class="btn pri" onclick="startNextAction(${firstDeck?`'${firstDeck.id}'`:"null"},${firstQuestion?`'${firstQuestion.id}'`:"null"})">Começar próxima ação ▶</button></div>
+      <p class="tiny dim" style="margin-top:2px">${due>0?due+" revisões devidas · ":""}${openTasks.length} tarefa(s) aberta(s)</p>
+      ${firstDeck?`<div class="planrow" onclick="reviewDeck('${firstDeck.id}')">🃏 Revisar ${dueCount(firstDeck)} flashcard(s) devido(s) — ${esc(firstDeck.title)}</div>`:""}
+      ${firstQuestion?`<div class="planrow" onclick="reviewQuestion('${firstQuestion.id}')">❓ Rever uma questão anterior</div>`:""}
+      ${openTasks.slice(0,3).map(t=>`<div class="planrow" onclick="setMode('progresso')"><span class="pill ${t.priority}">${t.priority==="high"?"Alta":t.priority==="normal"?"Normal":"Baixa"}</span> ${esc(t.title)}</div>`).join("")}
+    </div>
+    <div class="grid4">
       <div class="metric"><div class="l">Flashcards</div><div class="v">${total}</div><div class="small muted">${due} devidos agora</div></div>
       <div class="metric"><div class="l">Prática hoje</div><div class="v">${practicedToday}</div><div class="small muted">revisões feitas hoje</div></div>
       <div class="metric"><div class="l">Retenção</div><div class="v">${retention}</div><div class="small muted">últimas avaliações</div></div>
-      <div class="metric"><div class="l">Notas</div><div class="v">${notesCount}</div><div class="small muted">${w.questions.length} questões salvas</div></div>
+      <div class="metric"><div class="l">Produção</div><div class="v">${w.notes.length}</div><div class="small muted">notas · ${w.questions.length} questões</div></div>
     </div>
-    <h3 class="small" style="margin:18px 0 8px">TAREFAS — arraste entre as colunas ou use os botões</h3>
+    <h3 class="small" style="margin:18px 0 8px">TAREFAS</h3>
     <div class="kanban">${["high","normal","low"].map(p=>`
       <div class="kcol" ondragover="event.preventDefault()" ondrop="dropTask(event,'${p}')">
         <h5 style="color:${p==="high"?"var(--red)":p==="normal"?"var(--orange)":"var(--muted)"}">${p==="high"?"Alta":p==="normal"?"Normal":"Baixa"}</h5>
@@ -651,15 +759,34 @@ function viewProgresso(){
           </div>`).join("")}
       </div>`).join("")}
     </div>
-    <div class="row" style="margin:12px 0 20px">
+    <div class="row" style="margin:12px 0 4px">
       <input id="newTask" class="grow" placeholder="Nova tarefa… Ex.: Fazer lista 3 de Cálculo" onkeydown="if(event.key==='Enter')addTask()">
       <select id="newTaskP"><option value="high">Alta</option><option value="normal" selected>Normal</option><option value="low">Baixa</option></select>
       <button class="btn pri" onclick="addTask()">Adicionar</button>
     </div>
+    <hr><h3 class="small" style="margin-bottom:8px">MATERIAIS</h3>
+    ${w.materials.length?w.materials.map(m=>{
+      const pg=pages(m); const visited=(w.visited[m.id]||[]).length;
+      return `<div class="deckrow" onclick="ui.matId='${m.id}';setMode('estudar')" style="cursor:pointer">📄 <strong>${esc(m.title)}</strong>
+        <span class="tiny dim">${pg.length>1?visited+" de "+pg.length+" páginas visitadas":pg.length+" página"}</span>
+        <span class="tiny dim">${w.notes.filter(n=>n.matId===m.id).length} nota(s)</span></div>`;}).join("")
+      :`<div class="dim small">Nenhum material ainda.</div>`}
+    <hr><h3 class="small" style="margin-bottom:8px">ATIVIDADE RECENTE</h3>
+    ${w.activity.slice(-8).reverse().map(a=>`<div class="small muted" style="padding:3px 0">• ${actLabels[a.kind]||a.kind} · <span class="dim tiny">${new Date(a.at).toLocaleString("pt-BR")}</span></div>`).join("")||`<div class="dim small">As próximas ações aparecerão aqui.</div>`}
     <hr><h3 class="small" style="margin-bottom:10px">PRÁTICA LEVE — CAÇA-PALAVRAS DOS FLASHCARDS</h3>
     <div id="wsArea">${wordSearchHTML()}</div>
   </div>`;
 }
+function startNextAction(deckId,questionId){
+  if(deckId){ reviewDeck(deckId); return; }
+  if(questionId){ reviewQuestion(questionId); return; }
+  const t=ws().tasks.filter(t=>!t.done).sort((a,b)=>["high","normal","low"].indexOf(a.priority)-["high","normal","low"].indexOf(b.priority))[0];
+  if(t){ toast("Tarefa prioritária: "+t.title); return; }
+  if(mat()){ setMode("estudar"); return; }
+  addMaterialModal();
+}
+function reviewDeck(id){ ui.deckId=id; ui.fcIndex=0; ui.fcShow=false; ui.match=null; setMode("estudar"); }
+function reviewQuestion(id){ const i=ws().questions.findIndex(q=>q.id===id); ui.qIndex=i; ui.qSel=null; ui.qFeedback=null; setMode("estudar"); }
 function addTask(){ const el=document.getElementById("newTask"); const v=el.value.trim(); if(!v) return;
   ws().tasks.push({id:uid(),title:v,priority:document.getElementById("newTaskP").value,done:false,due:new Date(Date.now()+86400000).toISOString().slice(0,10)});
   el.value=""; save(); render(); }
@@ -706,27 +833,27 @@ function wordSearchHTML(){
   if(vocab.length<3) return `<div class="dim small">Crie flashcards com termos de pelo menos 4 letras para gerar o caça-palavras.</div>`;
   if(!ui.wsPuzzle) ui.wsPuzzle=wsMake(vocab);
   const P=ui.wsPuzzle;
-  if(!P) return `<div class="dim small">Não foi possível gerar o caça-palavras com esse vocabulário. <button class="btn tiny" onclick="wsNew()">Tentar de novo</button></div>`;
+  if(!P) return `<div class="dim small">Não foi possível gerar com esse vocabulário. <button class="btn tiny" onclick="wsNew()">Tentar de novo</button></div>`;
   const foundCells=new Map();
-  P.placements.forEach((pl,i)=>{ if(ui.wsFound.has(pl.word)) for(let k=0;k<pl.word.length;k++) foundCells.set((pl.r+pl.dr*k)+"_"+(pl.c+pl.dc*k),i); });
+  P.placements.forEach((pl,i)=>{ if(ui.wsFound.has(pl.word)||(ui.wsRevealed&&!ui.wsFound.has(pl.word))) for(let k=0;k<pl.word.length;k++) foundCells.set((pl.r+pl.dr*k)+"_"+(pl.c+pl.dc*k),{i,soft:!ui.wsFound.has(pl.word)}); });
   let cells="";
   for(let r=0;r<P.size;r++) for(let c=0;c<P.size;c++){
-    const key=r+"_"+c; const fi=foundCells.get(key);
-    const color=fi!=null?WS_PALETTE[fi%WS_PALETTE.length]:null;
-    cells+=`<div class="ws-cell ${fi!=null?'found':''} ${ui.wsStart&&ui.wsStart.key===key?'start':''}"
-      style="${color?`background:${color}33;color:${color};border-color:${color}55;`:""}"
+    const key=r+"_"+c; const f=foundCells.get(key);
+    const color=f?WS_PALETTE[f.i%WS_PALETTE.length]:null;
+    const bg=f?(f.soft?color+"1e":color+"33"):null;
+    cells+=`<div class="ws-cell ${f&&!f.soft?'found':''} ${ui.wsStart&&ui.wsStart.key===key?'start':''}"
+      style="${color?`background:${bg};color:${color};border-color:${color}55;`:""}"
       onclick="wsTap(${r},${c})">${P.grid[r][c]}</div>`;
   }
   const chips=P.placements.map((pl,i)=>{
     const f=ui.wsFound.has(pl.word); const col=WS_PALETTE[i%WS_PALETTE.length];
     return `<span class="ws-chip ${f?'found':''}" style="${f?`color:${col};border-color:${col}66;`:""}">${f?"✓ ":""}${pl.word}</span>`;
   }).join("");
-  const gridStyle=`grid-template-columns:repeat(${P.size},30px)`;
   return `<div class="card"><div class="row small muted"><span>Toque a primeira e a última letra — 8 direções, inclusive ao contrário.</span>
     <span class="spacer"></span><span>${ui.wsFound.size}/${P.placements.length}</span>
     <button class="btn tiny" onclick="wsReveal()">${ui.wsRevealed?"🙈 Esconder":"👁 Revelar"}</button>
     <button class="btn tiny" onclick="wsNew()">↻ Novo</button></div>
-    <div style="overflow:auto;margin-top:10px"><div class="ws-grid" style="${gridStyle}">${cells}</div></div>
+    <div style="overflow:auto;margin-top:10px"><div class="ws-grid" style="grid-template-columns:repeat(${P.size},30px)">${cells}</div></div>
     <div style="margin-top:10px">${chips}</div>
     ${ui.wsFound.size===P.placements.length?'<div style="margin-top:8px;font-weight:700;color:var(--green)">🎉 Todas encontradas!</div>':""}</div>`;
 }
@@ -735,7 +862,7 @@ function wsTap(r,c){
   const key=r+"_"+c;
   if(!ui.wsStart){ ui.wsStart={r,c,key}; render(); return; }
   if(ui.wsStart.key===key){ ui.wsStart=null; render(); return; }
-  const dr=Math.sign(r-ui.wsStart.r), dc=Math.sign(c-ui.wsStart.c);
+  const dr=Math.sign(r-ui.wsStart.r),dc=Math.sign(c-ui.wsStart.c);
   const steps=Math.max(Math.abs(r-ui.wsStart.r),Math.abs(c-ui.wsStart.c));
   const straight=(r-ui.wsStart.r===0||c-ui.wsStart.c===0||Math.abs(r-ui.wsStart.r)===Math.abs(c-ui.wsStart.c));
   if(!straight){ ui.wsStart={r,c,key}; render(); return; }
@@ -747,27 +874,44 @@ function wsTap(r,c){
 }
 function wsNew(){ ui.wsPuzzle=wsMake(wsVocab()); ui.wsFound=new Set(); ui.wsStart=null; ui.wsRevealed=false; render(); }
 function wsReveal(){ ui.wsRevealed=!ui.wsRevealed;
-  if(ui.wsRevealed) ui.wsPuzzle?.placements.forEach(pl=>ui.wsFound.add(pl.word));
-  else ui.wsFound=new Set();
+  if(!ui.wsRevealed) ui.wsFound=new Set();
   render(); }
 
 /* ============ AJUSTES ============ */
 function viewAjustes(){
   const s=state.settings;
-  return `<div class="view" style="max-width:640px">
+  return `<div class="view" style="max-width:680px">
     <h2 class="vt">Ajustes</h2>
     <div class="card" style="margin-top:14px">
       <h3>IA pedagógica</h3>
-      <p class="muted small" style="margin:6px 0 12px">A IA verifica, explica e cria revisões — sem entregar o gabarito. Use um endpoint compatível com OpenAI e a sua própria chave. A chave fica só neste navegador.</p>
-      <div class="field"><label>Endpoint (chat/completions)</label><input id="setEndpoint" value="${esc(s.endpoint)}"></div>
-      <div class="field"><label>Modelo</label><input id="setModel" value="${esc(s.model)}"></div>
-      <div class="field"><label>Chave de API</label><input id="setKey" type="password" value="${esc(s.key)}" placeholder="sk-…"></div>
+      <p class="muted small" style="margin:6px 0 12px">A IA verifica, explica e cria revisões — sem entregar o gabarito. A chave/login fica só neste navegador.</p>
+      <div class="radio-row">
+        <div class="radio-card ${s.provider==="chatgpt"?'on':''}" onclick="setProvider('chatgpt')">
+          <div class="t">Entrar com ChatGPT</div><div class="d">Use sua conta ChatGPT (grátis ou Plus) via openai-oauth.</div></div>
+        <div class="radio-card ${s.provider==="api"?'on':''}" onclick="setProvider('api')">
+          <div class="t">API compatível com OpenAI</div><div class="d">Sua própria chave (OpenAI, Groq, OpenRouter…).</div></div>
+      </div>
+      ${s.provider==="chatgpt"?`
+        <div class="field"><label>Status</label>
+          <div class="row"><span class="pill ${s.chatgptSigned?'low':'normal'}">${s.chatgptSigned?"Conectado":"Desconectado"}</span>
+          ${s.chatgptSigned
+            ?`<button class="btn tiny" onclick="chatgptLogout().then(()=>{render();toast('Desconectado.')})">Desconectar</button>`
+            :`<button class="btn blue" onclick="chatgptLogin()">Entrar com ChatGPT</button>`}</div>
+          <p class="tiny dim" style="margin-top:6px">O login usa a extensão open-source Sign in with ChatGPT (Chrome/Firefox). Se ela não estiver instalada, o link de instalação aparece automaticamente.</p></div>
+        <div class="field"><label>URL do proxy (obrigatório — o ChatGPT bloqueia chamadas diretas do navegador)</label>
+          <input id="setProxy" value="${esc(s.proxy)}" placeholder="https://seu-proxy.workers.dev/api/chat"></div>
+        <div class="tiny dim">Sem proxy? Eu posso te ajudar a publicar um Cloudflare Worker pronto — o código está em <code>proxy/worker.js</code> no repositório.</div>
+      `:`
+        <div class="field"><label>Endpoint (chat/completions)</label><input id="setEndpoint" value="${esc(s.endpoint)}"></div>
+        <div class="field"><label>Modelo</label><input id="setModel" value="${esc(s.model)}"></div>
+        <div class="field"><label>Chave de API</label><input id="setKey" type="password" value="${esc(s.key)}" placeholder="sk-…"></div>
+      `}
       <div class="row"><button class="btn pri" onclick="saveSettings()">Salvar</button>
         <button class="btn" onclick="testAI()">Testar conexão</button><span class="small muted" id="aiTest"></span></div>
     </div>
     <div class="card" style="margin-top:14px">
       <h3>Seus dados</h3>
-      <p class="muted small" style="margin:6px 0 12px">Tudo fica no localStorage deste navegador. Faça backup exportando um arquivo JSON.</p>
+      <p class="muted small" style="margin:6px 0 12px">Tudo fica neste navegador. Faça backup exportando um arquivo JSON.</p>
       <div class="row wrap">
         <button class="btn" onclick="exportData()">⬇️ Exportar backup</button>
         <button class="btn" onclick="document.getElementById('importFile').click()">⬆️ Importar backup</button>
@@ -777,22 +921,25 @@ function viewAjustes(){
     </div>
     <div class="card" style="margin-top:14px">
       <h3>Sobre</h3>
-      <p class="muted small">Studyh Web — versão navegador do Studyh. Versão Mac completa em <a href="https://studyh.tech">studyh.tech</a>. Material de texto na web v1; PDF/EPUB chegam em breve.</p>
+      <p class="muted small">Studyh Web — versão navegador do Studyh. App Mac completo em <a href="https://studyh.tech">studyh.tech</a>. Materiais em texto na v1; PDF/EPUB chegam em breve.</p>
     </div>
   </div>`;
 }
+function setProvider(p){ state.settings.provider=p; save(); render(); }
 function saveSettings(){
-  state.settings.endpoint=document.getElementById("setEndpoint").value.trim();
-  state.settings.model=document.getElementById("setModel").value.trim();
-  state.settings.key=document.getElementById("setKey").value.trim();
+  const s=state.settings;
+  if(s.provider==="chatgpt"){ s.proxy=document.getElementById("setProxy").value.trim(); }
+  else{
+    s.endpoint=document.getElementById("setEndpoint").value.trim();
+    s.model=document.getElementById("setModel").value.trim();
+    s.key=document.getElementById("setKey").value.trim();
+  }
   save(); renderAIStatus(); toast("Ajustes salvos.");
 }
 async function testAI(){
   const el=document.getElementById("aiTest"); el.textContent=" testando…";
-  state.settings.endpoint=document.getElementById("setEndpoint").value.trim();
-  state.settings.model=document.getElementById("setModel").value.trim();
-  state.settings.key=document.getElementById("setKey").value.trim();
-  try{ const r=await aiCall("Responda apenas: OK","Responda apenas: OK"); el.textContent=" ✓ "+r.slice(0,40); renderAIStatus(); }
+  saveSettings();
+  try{ const r=await aiCall("Responda apenas: OK","Responda apenas: OK"); el.textContent=" ✓ "+String(r).slice(0,40); renderAIStatus(); }
   catch(e){ el.textContent=" ✗ "+e.message; }
 }
 function exportData(){
@@ -805,16 +952,16 @@ function importData(ev){
   const reader=new FileReader();
   reader.onload=()=>{ try{ const data=JSON.parse(reader.result);
     if(!data.workspaces) throw new Error();
-    state=data; state.current=state.workspaces[0]?.id; save(); render(); toast("Backup importado.");
+    state=data; migrate(); state.current=state.workspaces[0]?.id; ui.nbId=null; save(); render(); toast("Backup importado.");
   }catch(e){ toast("Arquivo inválido."); } };
   reader.readAsText(f);
 }
 function resetAll(){ if(!confirm("Apagar TODOS os dados do Studyh neste navegador?")) return;
-  localStorage.removeItem(STORE_KEY); state=seed(); save(); render(); }
+  localStorage.removeItem(STORE_KEY); state=seed(); ui.nbId=null; save(); render(); }
 
 /* ============ busca global ============ */
 function openSearch(){ ui.search=""; modal(`<h3>Buscar em tudo</h3>
-  <input id="searchInput" style="width:100%" placeholder="Digite pelo menos 2 letras…" oninput="doSearch()" onkeydown="if(event.key==='Enter')doSearch()">
+  <input id="searchInput" style="width:100%" placeholder="Digite pelo menos 2 letras…" oninput="doSearch()">
   <div id="searchResults" style="margin-top:12px"></div>
   <div class="row" style="justify-content:flex-end;margin-top:10px"><button class="btn" onclick="closeModal()">Fechar</button></div>`);
   document.getElementById("searchInput").focus();
@@ -823,17 +970,17 @@ function doSearch(){
   const q=document.getElementById("searchInput").value.trim().toLowerCase();
   const out=document.getElementById("searchResults");
   if(q.length<2){ out.innerHTML=`<div class="dim small">Digite pelo menos 2 letras.</div>`; return; }
-  const norm=s=>s.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
+  const norm=s=>String(s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
   const results=[];
   ws().materials.forEach(m=>{ if(norm(m.title).includes(q)||norm(m.text).includes(q)) results.push(["📄 Material",m.title,m.text]); });
   ws().notes.forEach(n=>{ if(norm(n.text).includes(q)) results.push(["📌 Nota",(mat()?.title||""),n.text]); });
-  ws().decks.forEach(d=>d.cards.forEach(c=>{ if(norm(c.front+c.back).includes(q)) results.push(["🃏 Flashcard",d.title,c.front+" → "+c.back]); }));
+  ws().decks.forEach(d=>d.cards.forEach(c=>{ if(norm(c.front+" "+c.back).includes(q)) results.push(["🃏 Flashcard",d.title,c.front+" → "+c.back]); }));
   ws().questions.forEach(x=>{ if(norm(x.stem).includes(q)) results.push(["❓ Questão","",x.stem]); });
   ws().notebooks.forEach(nb=>{ if(norm(nb.text).includes(q)) results.push(["📓 Caderno",nb.title,nb.text]); });
   const snippet=t=>{ const i=norm(t).indexOf(q); if(i<0) return esc(t.slice(0,120)); const s=Math.max(0,i-40); return (s>0?"…":"")+esc(t.slice(s,i+90))+"…"; };
-  out.innerHTML = results.length
-    ? results.slice(0,30).map(([kind,title,text])=>`<div class="card small" style="margin-bottom:8px"><strong>${kind}</strong> <span class="dim">${esc(title)}</span><div class="muted">${snippet(text)}</div></div>`).join("")
-    : `<div class="dim small">Nada encontrado em “${esc(q)}”.</div>`;
+  out.innerHTML=results.length
+    ?results.slice(0,30).map(([kind,title,text])=>`<div class="card small" style="margin-bottom:8px"><strong>${kind}</strong> <span class="dim">${esc(title)}</span><div class="muted">${snippet(text)}</div></div>`).join("")
+    :`<div class="dim small">Nada encontrado em “${esc(q)}”.</div>`;
 }
 
 /* ============ modal ============ */
@@ -841,8 +988,8 @@ function modal(html){ document.getElementById("modalRoot").innerHTML=`<div class
 function closeModal(){ document.getElementById("modalRoot").innerHTML=""; }
 
 /* ============ boot ============ */
-if(ws().materials.length && !ui.matId) ui.matId=null;
 render();
+chatgptCheck().then(signed=>{ if(signed!==!!state.settings.chatgptSigned){ state.settings.chatgptSigned=signed; save(); renderAIStatus(); } });
 </script>
 </body>
 </html>
