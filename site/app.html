@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Studyh Web — Estude de verdade</title>
+<meta name="description" content="Studyh no navegador: IA que não entrega o gabarito, flashcards com revisão espaçada, questões, caderno em blocos e progresso. Seus dados ficam no seu navegador.">
+<style>
+:root{
+  --bg:#0b1018; --bg2:#101724; --card:#151d2c; --card2:#1a2334; --line:#232f42;
+  --text:#eef3f8; --muted:#93a3b5; --dim:#5f7183;
+  --green:#7ef06a; --green-soft:rgba(126,240,106,.14);
+  --accent:#6db3ff; --accent-soft:rgba(109,179,255,.14);
+  --orange:#ffb454; --red:#ff6b7a; --purple:#c6a4ff;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{font-family:-apple-system,system-ui,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text);font-size:15px;line-height:1.5;overflow:hidden}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+input,textarea,select{font:inherit;color:var(--text);background:var(--bg2);border:1px solid var(--line);border-radius:8px;padding:8px 10px;outline:none}
+input:focus,textarea:focus,select:focus{border-color:var(--accent)}
+::placeholder{color:var(--dim)}
+#app{display:flex;flex-direction:column;height:100vh}
+
+/* topbar */
+#topbar{display:flex;align-items:center;gap:12px;padding:10px 16px;background:var(--bg2);border-bottom:1px solid var(--line);flex-wrap:wrap}
+.logo{font-weight:800;font-size:1.05rem;letter-spacing:-.02em}
+.logo span{color:var(--green)}
+.modes{display:flex;background:var(--card);border:1px solid var(--line);border-radius:9px;overflow:hidden}
+.modes button{padding:7px 16px;font-weight:600;color:var(--muted);font-size:.9rem}
+.modes button.on{background:var(--accent);color:#0b1018}
+.spacer{flex:1}
+.tbtn{padding:7px 13px;border:1px solid var(--line);border-radius:9px;font-size:.88rem;font-weight:600;color:var(--muted)}
+.tbtn:hover{color:var(--text);border-color:var(--dim)}
+#saveState{font-size:.78rem;color:var(--dim)}
+#aiStatus{font-size:.8rem;padding:6px 11px;border-radius:99px;border:1px solid var(--line);color:var(--muted);cursor:pointer}
+#aiStatus.ok{color:var(--green);border-color:rgba(126,240,106,.35)}
+
+/* layout */
+#main{flex:1;display:flex;min-height:0}
+#sidebar{width:230px;min-width:190px;background:var(--bg2);border-right:1px solid var(--line);display:flex;flex-direction:column;padding:12px}
+#sidebar h4{font-size:.72rem;text-transform:uppercase;letter-spacing:.09em;color:var(--dim);margin:4px 6px 8px}
+.ws-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;cursor:pointer;color:var(--muted);font-size:.92rem}
+.ws-item:hover{background:var(--card)}
+.ws-item.on{background:var(--accent-soft);color:var(--text)}
+.ws-item .del{margin-left:auto;opacity:0;color:var(--dim);font-size:.8rem}
+.ws-item:hover .del{opacity:1}
+.ws-item .del:hover{color:var(--red)}
+#view{flex:1;overflow:auto;padding:20px 24px;min-width:0}
+.view{max-width:1100px;margin:0 auto}
+
+/* journey */
+#journey{display:flex;align-items:center;gap:10px;padding:8px 16px;background:rgba(109,179,255,.05);border-bottom:1px solid var(--line);font-size:.82rem;flex-wrap:wrap}
+.jstep{display:flex;align-items:center;gap:5px;color:var(--muted)}
+.jstep.done{color:var(--green)}
+.jarrow{color:var(--dim)}
+#journey .next{margin-left:auto;background:var(--green);color:#0b1018;font-weight:700;padding:6px 14px;border-radius:8px;font-size:.82rem}
+
+/* cards & misc */
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}
+.muted{color:var(--muted)} .dim{color:var(--dim)}
+.small{font-size:.85rem} .tiny{font-size:.78rem}
+h2.vt{font-size:1.35rem;margin-bottom:2px}
+.row{display:flex;align-items:center;gap:8px}
+.wrap{flex-wrap:wrap}
+.grow{flex:1}
+.btn{padding:7px 14px;border-radius:8px;font-weight:600;font-size:.88rem;border:1px solid var(--line);background:var(--card2)}
+.btn:hover{border-color:var(--dim)}
+.btn.pri{background:var(--green);color:#0b1018;border-color:transparent}
+.btn.blue{background:var(--accent);color:#0b1018;border-color:transparent}
+.btn.danger{color:var(--red)}
+.btn:disabled{opacity:.45;cursor:default}
+.pill{padding:3px 10px;border-radius:99px;font-size:.75rem;font-weight:600}
+.pill.high{background:rgba(255,107,122,.15);color:var(--red)}
+.pill.normal{background:rgba(255,180,84,.15);color:var(--orange)}
+.pill.low{background:rgba(147,163,181,.15);color:var(--muted)}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.metric{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}
+.metric .v{font-size:1.7rem;font-weight:800;margin:4px 0}
+.metric .l{font-size:.75rem;color:var(--dim);text-transform:uppercase;letter-spacing:.07em}
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--card2);border:1px solid var(--line);padding:10px 20px;border-radius:10px;font-size:.9rem;z-index:99;box-shadow:0 8px 30px rgba(0,0,0,.4);animation:pop .18s ease}
+@keyframes pop{from{opacity:0;transform:translateX(-50%) translateY(8px)}}
+hr{border:none;border-top:1px solid var(--line);margin:14px 0}
+
+/* estudar */
+#estudar{display:flex;gap:0;min-height:100%}
+.material-col{flex:1;min-width:0;display:flex;flex-direction:column;gap:12px}
+.assistant{width:360px;min-width:300px;border-left:1px solid var(--line);padding-left:18px;display:flex;flex-direction:column;gap:10px}
+.mat-tabs{display:flex;gap:6px;flex-wrap:wrap}
+.mat-tab{padding:6px 12px;border-radius:99px;font-size:.83rem;font-weight:600;border:1px solid var(--line);color:var(--muted)}
+.mat-tab.on{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+.pagebody{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:20px;white-space:pre-wrap;line-height:1.7;user-select:text;max-height:46vh;overflow:auto}
+.pagenav{display:flex;align-items:center;gap:10px}
+.note-item{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--orange);border-radius:8px;padding:10px 12px;font-size:.9rem;margin-top:8px}
+.chat{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:8px;min-height:120px;max-height:34vh}
+.msg{padding:10px 12px;border-radius:10px;font-size:.9rem;white-space:pre-wrap}
+.msg.user{background:var(--accent-soft);align-self:flex-end;max-width:85%}
+.msg.ai{background:var(--card);border:1px solid var(--line);align-self:stretch}
+.deckrow{display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-top:8px;font-size:.9rem}
+.fc{background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:22px;text-align:center}
+.fc .label{font-size:.7rem;letter-spacing:.12em;color:var(--dim);font-weight:700}
+.fc .body{margin-top:10px;font-size:1.05rem;line-height:1.55}
+.opt{display:block;width:100%;text-align:left;padding:10px 12px;border:1px solid var(--line);border-radius:9px;margin-top:8px;background:var(--bg2);font-size:.92rem}
+.opt:hover{border-color:var(--dim)}
+.opt.sel{border-color:var(--accent);background:var(--accent-soft)}
+.opt.right{border-color:var(--green);background:var(--green-soft)}
+.opt.wrong{border-color:var(--red);background:rgba(255,107,122,.12)}
+
+/* mesa/caderno */
+.nb-editor{width:100%;min-height:300px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;line-height:1.7;resize:vertical;white-space:pre-wrap}
+.kanban{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.kcol{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px;min-height:120px}
+.kcol h5{font-size:.78rem;text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px}
+.kcard{background:var(--card2);border:1px solid var(--line);border-radius:9px;padding:9px 11px;font-size:.88rem;margin-bottom:7px;cursor:grab}
+.kcard.done{opacity:.5;text-decoration:line-through}
+
+/* wordsearch */
+.ws-grid{display:grid;gap:3px;width:max-content}
+.ws-cell{width:30px;height:30px;display:flex;align-items:center;justify-content:center;border-radius:6px;background:var(--card2);font-family:ui-monospace,monospace;font-size:.85rem;cursor:pointer;border:1px solid transparent}
+.ws-cell.found{font-weight:700}
+.ws-cell.start{border-color:var(--accent)}
+.ws-chip{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:99px;font-size:.78rem;font-weight:600;margin:3px;background:var(--card2);border:1px solid var(--line)}
+.ws-chip.found{text-decoration:line-through}
+
+/* matching */
+.match-cols{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.mitem{padding:9px 11px;border:1px solid var(--line);border-radius:9px;background:var(--bg2);font-size:.86rem;text-align:left;margin-bottom:6px;width:100%}
+.mitem.sel{border-color:var(--accent);background:var(--accent-soft)}
+.mitem.ok{border-color:var(--green);background:var(--green-soft);opacity:.6}
+
+/* modal */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:50}
+.modal{background:var(--bg2);border:1px solid var(--line);border-radius:14px;padding:22px;width:min(560px,92vw);max-height:88vh;overflow:auto}
+.modal h3{margin-bottom:12px}
+.field{margin-bottom:12px}
+.field label{display:block;font-size:.8rem;color:var(--muted);margin-bottom:5px;font-weight:600}
+.field input,.field textarea,.field select{width:100%}
+.field textarea{min-height:180px;resize:vertical}
+
+@media (max-width:900px){
+  #sidebar{display:none}
+  #estudar{flex-direction:column}
+  .assistant{width:auto;border-left:none;padding-left:0;border-top:1px solid var(--line);padding-top:14px}
+  .grid4{grid-template-columns:1fr 1fr}
+  .kanban{grid-template-columns:1fr}
+  #view{padding:14px}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="topbar">
+    <div class="logo">study<span>h</span></div>
+    <div class="modes" id="modeTabs"></div>
+    <div class="spacer"></div>
+    <button class="tbtn" onclick="openSearch()">🔎 Buscar</button>
+    <button id="aiStatus" onclick="openSettings()">IA: não configurada</button>
+    <span id="saveState">salvo</span>
+  </div>
+  <div id="journey"></div>
+  <div id="main">
+    <div id="sidebar"></div>
+    <div id="view"></div>
+  </div>
+</div>
+<div id="modalRoot"></div>
+
+<script>
+"use strict";
+/* ============ estado e persistência ============ */
+const STORE_KEY = "studyh-web-v1";
+const DAILY_NEW_LIMIT = 20;
+let state = load() || seed();
+let ui = { mode:"estudar", matId:null, page:0, deckId:null, fcIndex:0, fcShow:false,
+           qIndex:null, qSel:null, qFeedback:null, match:null, wsPuzzle:null, wsFound:new Set(),
+           wsStart:null, chat:[], busy:false, search:"" };
+
+function save(){ localStorage.setItem(STORE_KEY, JSON.stringify(state)); flashSaved(); }
+let saveTimer;
+function debouncedSave(){ clearTimeout(saveTimer); saveTimer = setTimeout(save, 600); document.getElementById("saveState").textContent="salvando…"; }
+function flashSaved(){ document.getElementById("saveState").textContent="salvo"; }
+function load(){ try{ return JSON.parse(localStorage.getItem(STORE_KEY)); }catch(e){ return null; } }
+function uid(){ return Math.random().toString(36).slice(2,10); }
+function esc(s){ return String(s??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+
+function seed(){
+  const ws = { id:uid(), name:"Minha matéria", materials:[], notes:[], decks:[], questions:[],
+    tasks:[], reviews:{}, activity:[], visited:{}, notebooks:[{id:uid(), title:"Caderno 1", text:""}] };
+  return { workspaces:[ws], current:ws.id, settings:{ endpoint:"https://api.openai.com/v1/chat/completions", key:"", model:"gpt-4.1-mini" } };
+}
+function ws(){ return state.workspaces.find(w=>w.id===state.current); }
+function mat(){ const w=ws(); return w.materials.find(m=>m.id===ui.matId) || w.materials[0] || null; }
+function pages(m){ if(!m) return []; return m.text.split(/\n\s*---\s*\n/).map(t=>t.trim()).filter(Boolean); }
+
+/* ============ utilidades ============ */
+function toast(msg){ const t=document.createElement("div"); t.className="toast"; t.textContent=msg; document.body.appendChild(t); setTimeout(()=>t.remove(),2600); }
+function todayKey(d=new Date()){ return d.toISOString().slice(0,10); }
+function introducedToday(){ const k=todayKey(); return Object.values(ws().reviews).filter(r=>r.introduced===k).length; }
+function dueCards(deck){ const now=Date.now(); return deck.cards.filter(c=>{ const r=ws().reviews[c.id]; return !r || r.due<=now; }); }
+function dueCount(deck){ return dueCards(deck).length; }
+function newCount(deck){ const now=Date.now(); return deck.cards.filter(c=>!ws().reviews[c.id]).filter(()=>introducedToday()<DAILY_NEW_LIMIT).length; }
+
+/* ============ render raiz ============ */
+function render(){
+  renderTabs(); renderSidebar(); renderJourney();
+  const v = document.getElementById("view");
+  if(ui.mode==="estudar") v.innerHTML = viewEstudar();
+  else if(ui.mode==="caderno") v.innerHTML = viewCaderno();
+  else if(ui.mode==="progresso") v.innerHTML = viewProgresso();
+  else if(ui.mode==="ajustes") v.innerHTML = viewAjustes();
+  if(ui.mode==="estudar") renderAssistantDynamic();
+  renderAIStatus();
+}
+function renderTabs(){
+  const modes=[["estudar","Estudar"],["caderno","Caderno"],["progresso","Progresso"],["ajustes","Ajustes"]];
+  document.getElementById("modeTabs").innerHTML = modes.map(([k,l])=>
+    `<button class="${ui.mode===k?'on':''}" onclick="setMode('${k}')">${l}</button>`).join("");
+}
+function setMode(m){ ui.mode=m; render(); }
+function renderSidebar(){
+  const sb=document.getElementById("sidebar");
+  sb.innerHTML = `<h4>Matérias</h4>` + state.workspaces.map(w=>
+    `<div class="ws-item ${w.id===state.current?'on':''}" onclick="pickWS('${w.id}')">
+      <span>📘 ${esc(w.name)}</span>
+      <span class="del" onclick="event.stopPropagation();delWS('${w.id}')">✕</span>
+    </div>`).join("") +
+    `<div class="ws-item" onclick="addWS()">＋ Nova matéria</div>`;
+}
+function pickWS(id){ state.current=id; ui={...ui, matId:null, page:0, deckId:null, chat:[], qIndex:null, qFeedback:null, match:null, wsPuzzle:null}; save(); render(); }
+function addWS(){ const w={id:uid(),name:"Matéria "+(state.workspaces.length+1),materials:[],notes:[],decks:[],questions:[],tasks:[],reviews:{},activity:[],visited:{},notebooks:[{id:uid(),title:"Caderno 1",text:""}]}; state.workspaces.push(w); state.current=w.id; ui={...ui,matId:null}; save(); render(); }
+function delWS(id){ if(state.workspaces.length<=1){ toast("Precisa de pelo menos uma matéria."); return; }
+  if(!confirm("Apagar esta matéria com todo o conteúdo?")) return;
+  state.workspaces=state.workspaces.filter(w=>w.id!==id); if(state.current===id) state.current=state.workspaces[0].id; save(); render(); }
+
+function renderJourney(){
+  const w=ws(); const m=mat();
+  const hasMat = !!m;
+  const hasAttempt = w.notes.length>0 || Object.keys(w.visited||{}).length>0;
+  const hasAI = w.activity.some(a=>a.kind==="ai");
+  const hasReview = w.activity.some(a=>a.kind==="review");
+  const steps=[["1","Material",hasMat],["2","Tentativa",hasAttempt],["3","Orientação",hasAI],["4","Revisão",hasReview]];
+  let next="Adicionar material", act=()=>addMaterialModal();
+  if(hasMat && !hasAttempt){ next="Fazer uma tentativa"; act=()=>setMode("estudar"); }
+  else if(hasMat && !hasAI){ next="Pedir orientação"; act=()=>setMode("estudar"); }
+  else if(!hasReview){ next="Revisar agora"; act=()=>setMode("estudar"); }
+  else { next="Ver progresso"; act=()=>setMode("progresso"); }
+  document.getElementById("journey").innerHTML =
+    steps.map(([n,t,done],i)=>`${i?'<span class="jarrow">›</span>':''}<span class="jstep ${done?'done':''}">${done?'✓':n+'. '} ${t}</span>`).join("")+
+    `<button class="next" onclick="(${act.toString()})()">${next}</button>`;
+}
+
+/* ============ ESTUDAR ============ */
+function viewEstudar(){
+  const m = mat(); const w = ws();
+  let inner;
+  if(!m){
+    inner = `<div class="card" style="text-align:center;padding:48px">
+      <h3>Nenhum material ainda</h3>
+      <p class="muted small" style="margin:8px 0 16px">Cole um resumo, anotação de aula ou texto de estudo. Separe páginas com uma linha contendo <code>---</code>.</p>
+      <button class="btn pri" onclick="addMaterialModal()">＋ Adicionar material</button></div>`;
+  } else {
+    const pgs = pages(m); const pg = pgs[Math.min(ui.page, pgs.length-1)] ?? "";
+    inner = `
+      <div class="mat-tabs">${w.materials.map(x=>
+        `<button class="mat-tab ${x.id===m.id?'on':''}" onclick="ui.matId='${x.id}';ui.page=0;render()">📄 ${esc(x.title)}</button>`).join("")}
+        <button class="mat-tab" onclick="addMaterialModal()">＋</button></div>
+      <div class="row"><h2 class="vt grow">${esc(m.title)}</h2>
+        <button class="btn danger tiny" onclick="delMaterial('${m.id}')">Remover</button></div>
+      ${pgs.length>1?`<div class="pagenav">
+        <button class="btn" onclick="ui.page=Math.max(0,ui.page-1);render()" ${ui.page===0?"disabled":""}>←</button>
+        <span class="muted small">Página ${ui.page+1} de ${pgs.length}</span>
+        <button class="btn" onclick="ui.page=Math.min(${pgs.length-1},ui.page+1);render()" ${ui.page>=pgs.length-1?"disabled":""}>→</button>
+        <span class="dim tiny">Selecione um trecho e clique em “Nota do trecho”.</span></div>`:""}
+      <div class="pagebody" id="pageBody" onmouseup="pageSelected()">${esc(pg)}</div>
+      <div class="row wrap">
+        <button class="btn" onclick="noteFromSelection()">📌 Nota do trecho</button>
+        <button class="btn" onclick="addNoteWhole()">📌 Nota da página inteira</button>
+      </div>
+      <div id="notesList">${w.notes.filter(n=>n.matId===m.id).map(n=>
+        `<div class="note-item"><div class="tiny dim">${n.page!=null?"pág. "+(n.page+1)+" · ":""}${new Date(n.at).toLocaleString("pt-BR")}</div>${esc(n.text)}</div>`).join("")}</div>`;
+  }
+  return `<div id="estudar"><div class="material-col">${inner}</div>${assistantHTML()}</div>`;
+}
+function pageSelected(){
+  const sel = window.getSelection().toString().trim();
+  ui.selection = sel.length>3 ? sel : "";
+}
+function noteFromSelection(){
+  const t = ui.selection || "";
+  if(!t){ toast("Selecione um trecho do texto primeiro."); return; }
+  createNote(t);
+}
+function addNoteWhole(){
+  const m=mat(); if(!m) return;
+  const pg = pages(m)[Math.min(ui.page,pages(m).length-1)] ?? "";
+  createNote(pg.slice(0,400));
+}
+function createNote(text){
+  const w=ws();
+  w.notes.unshift({id:uid(), matId:mat().id, page:pages(mat()).length>1?ui.page:null, text, at:Date.now()});
+  w.activity.push({kind:"attempt",at:Date.now()});
+  save(); render(); toast("Nota criada.");
+}
+function delMaterial(id){ if(!confirm("Remover este material? Notas e baralhos continuam salvos.")) return;
+  const w=ws(); w.materials=w.materials.filter(x=>x.id!==id); if(ui.matId===id) ui.matId=null; save(); render(); }
+
+function addMaterialModal(){
+  modal(`<h3>Novo material</h3>
+    <div class="field"><label>Título</label><input id="mTitle" placeholder="Ex.: Fotossíntese — aula 3"></div>
+    <div class="field"><label>Texto (separe páginas com uma linha ---)</label><textarea id="mText" placeholder="Cole aqui o resumo ou anotação da aula…"></textarea></div>
+    <div class="row" style="justify-content:flex-end"><button class="btn" onclick="closeModal()">Cancelar</button>
+    <button class="btn pri" onclick="saveMaterial()">Adicionar</button></div>`);
+}
+function saveMaterial(){
+  const title=document.getElementById("mTitle").value.trim();
+  const text=document.getElementById("mText").value.trim();
+  if(!title||!text){ toast("Preencha título e texto."); return; }
+  const w=ws(); const m={id:uid(),title,text}; w.materials.push(m); ui.matId=m.id; ui.page=0;
+  save(); closeModal(); render();
+}
+
+/* ============ assistente / IA ============ */
+function aiReady(){ return !!state.settings.key; }
+function renderAIStatus(){
+  const el=document.getElementById("aiStatus");
+  el.textContent = aiReady() ? "IA: configurada" : "IA: não configurada";
+  el.className = aiReady() ? "ok" : "";
+}
+function assistantHTML(){
+  const w=ws();
+  return `<div class="assistant">
+    <div class="row"><strong>Studyh</strong><span class="spacer"></span>
+      <button class="btn tiny" onclick="ui.chat=[];render()">Nova conversa</button></div>
+    <div class="row wrap">
+      <button class="btn" onclick="aiExplain()">Explicar página</button>
+      <button class="btn" onclick="aiFlashcards()">Flashcards</button>
+      <button class="btn" onclick="aiQuestion()">Criar questão</button>
+    </div>
+    <div class="chat" id="chatBox">${ui.chat.map(m=>`<div class="msg ${m.role}">${esc(m.content)}</div>`).join("")}</div>
+    <div class="row">
+      <input class="grow" id="chatInput" placeholder="${aiReady()?"Pergunte sobre o material…":"Configure a IA para conversar"}"
+        onkeydown="if(event.key==='Enter')sendChat()" ${aiReady()?"":"disabled"}>
+      <button class="btn blue" onclick="sendChat()" ${aiReady()?"":"disabled"}>Enviar</button>
+    </div>
+    <div id="revisaoArea"></div>
+  </div>`;
+}
+function renderAssistantDynamic(){ renderChat(); renderDecks(); renderQuestionFlow(); }
+function renderChat(){
+  const box=document.getElementById("chatBox"); if(!box) return;
+  box.innerHTML = ui.chat.map(m=>`<div class="msg ${m.role}">${esc(m.content)}</div>`).join("") ||
+    `<div class="dim small">Peça uma explicação simples da página, faça uma pergunta ou transforme o que já leu em revisão.</div>`;
+  box.scrollTop = box.scrollHeight;
+}
+function pushChat(role,content){ ui.chat.push({role,content}); renderChat(); }
+
+async function aiCall(system,user,json=false){
+  const s=state.settings;
+  const res=await fetch(s.endpoint,{ method:"POST",
+    headers:{"Content-Type":"application/json","Authorization":"Bearer "+s.key},
+    body:JSON.stringify({ model:s.model, temperature:0.4,
+      messages:[{role:"system",content:system},{role:"user",content:user}] }) });
+  if(!res.ok){ const t=await res.text().catch(()=>""); throw new Error("HTTP "+res.status+" "+t.slice(0,180)); }
+  const data=await res.json();
+  const text=data.choices?.[0]?.message?.content?.trim() || "";
+  if(json){ const match=text.match(/\{[\s\S]*\}|\[[\s\S]*\]/); if(!match) throw new Error("A IA não retornou dados no formato esperado."); return JSON.parse(match[0]); }
+  return text;
+}
+function pedagogicalContract(){ return `Você é o tutor do Studyh. Trabalhe somente a partir do material fornecido e admita quando ele não contiver a informação.
+NUNCA entregue a resposta pronta de exercício: peça a tentativa do estudante primeiro e ofereça apenas orientação conceitual.
+Use linguagem simples, frases curtas, em português. Explique termos difíceis. Sem alertas genéricos e sem inventar fatos.`; }
+function currentContext(){
+  const m=mat(); if(!m) return "";
+  const pgs=pages(m); return pgs[Math.min(ui.page,pgs.length-1)] ?? "";
+}
+function guardAI(){ if(!aiReady()){ openSettings(); toast("Configure a IA em Ajustes para usar isso."); return false; }
+  if(!mat()){ toast("Adicione um material primeiro."); return false; } return true; }
+function withBusy(fn){ return async()=>{ if(ui.busy) return; ui.busy=true;
+  try{ await fn(); }catch(e){ pushChat("ai","⚠️ "+e.message); } finally{ ui.busy=false; } }; }
+
+const aiExplain = withBusy(async()=>{
+  if(!guardAI()) return;
+  const ctx=currentContext(); if(!ctx){ toast("A página está vazia."); return; }
+  pushChat("user","Explique esta página.");
+  const r=await aiCall(pedagogicalContract(),`Explique o trecho abaixo em linguagem simples, conectando as ideias principais. Não resolva exercícios.\n\nTrecho:\n${ctx.slice(0,6000)}`);
+  ws().activity.push({kind:"ai",at:Date.now()}); save(); renderJourney(); pushChat("ai",r);
+});
+const aiFlashcards = withBusy(async()=>{
+  if(!guardAI()) return;
+  const ctx=currentContext(); if(!ctx){ toast("A página está vazia."); return; }
+  pushChat("user","Crie flashcards desta página.");
+  const data=await aiCall(pedagogicalContract(),
+    `Crie de 3 a 6 flashcards fiéis ao trecho. Responda SOMENTE com JSON: [{"front":"pergunta","back":"resposta curta"}]\n\nTrecho:\n${ctx.slice(0,6000)}`,true);
+  const cards=(Array.isArray(data)?data:data.cards||[]).filter(c=>c.front&&c.back).map(c=>({id:uid(),front:c.front,back:c.back}));
+  if(!cards.length) throw new Error("A IA não gerou flashcards utilizáveis.");
+  const w=ws(); w.decks.push({id:uid(),title:mat().title+" · pág. "+(ui.page+1),cards,createdAt:Date.now()});
+  w.activity.push({kind:"ai",at:Date.now()}); save(); render(); toast(cards.length+" flashcards criados.");
+});
+const aiQuestion = withBusy(async()=>{
+  if(!guardAI()) return;
+  const ctx=currentContext(); if(!ctx){ toast("A página está vazia."); return; }
+  const used=ws().questions.map(q=>q.stem).slice(-5);
+  pushChat("user","Crie uma questão desta página.");
+  const data=await aiCall(pedagogicalContract(),
+    `Crie UMA questão de múltipla escolha (A–D) sobre um aspecto diferente destas já usadas: ${JSON.stringify(used)}.
+A alternativa correta deve estar no trecho; as distratoras plausíveis. Responda SOMENTE com JSON:
+{"stem":"enunciado","options":["a","b","c","d"],"correct":0,"why":"explicação curta da correta"}\n\nTrecho:\n${ctx.slice(0,6000)}`,true);
+  if(typeof data.correct!=="number" || !Array.isArray(data.options)) throw new Error("Questão em formato inesperado.");
+  const w=ws(); w.questions.push({id:uid(),matId:mat().id,stem:data.stem,options:data.options,correct:data.correct,why:data.why||"",createdAt:Date.now()});
+  w.activity.push({kind:"ai",at:Date.now()}); ui.qIndex=w.questions.length-1; ui.qSel=null; ui.qFeedback=null;
+  save(); render(); toast("Questão criada — responda antes de ver!");
+});
+function sendChat(){
+  const input=document.getElementById("chatInput");
+  const msg=input.value.trim(); if(!msg||!aiReady()) return;
+  input.value="";
+  pushChat("user",msg);
+  withBusy(async()=>{
+    const guard=/\b(resposta|gabarito|me\s*d[áa]|qual\s*é\s*a\s*resposta)\b/i.test(msg);
+    const ctx=currentContext();
+    const extra = guard ? "\n\nO estudante pode estar pedindo a resposta pronta. Se for o caso, peça a tentativa dele primeiro e ofereça apenas uma pista." : "";
+    const r=await aiCall(pedagogicalContract(),`Pergunta do estudante: ${msg}\n\nTrecho atual do material:\n${ctx.slice(0,6000)}${extra}`);
+    ws().activity.push({kind:"ai",at:Date.now()}); save(); renderJourney(); pushChat("ai",r);
+  })();
+}
+
+/* ============ revisão: baralhos, flashcards, questões ============ */
+function renderDecks(){
+  const el=document.getElementById("revisaoArea"); if(!el) return;
+  const w=ws();
+  if(!w.decks.length && !w.questions.length){
+    el.innerHTML=`<hr><div class="dim small">Flashcards e questões criados aparecerão aqui para revisão.</div>`; return;
+  }
+  let html=`<hr><div class="tiny dim" style="margin-bottom:4px">REVISÃO</div>`;
+  w.decks.forEach(d=>{
+    html+=`<div class="deckrow"><span>🃏 <strong>${esc(d.title)}</strong></span>
+      <span class="pill normal">${dueCount(d)} devidos</span><span class="spacer"></span>
+      <button class="btn tiny ${ui.deckId===d.id?'pri':''}" onclick="openDeck('${d.id}')">Revisar</button></div>`;
+  });
+  w.questions.forEach((q,i)=>{
+    html+=`<div class="deckrow"><span>❓ ${esc(q.stem.slice(0,60))}…</span><span class="spacer"></span>
+      <button class="btn tiny" onclick="ui.qIndex=${i};ui.qSel=null;ui.qFeedback=null;render()">Rever</button></div>`;
+  });
+  if(ui.deckId){ html+=deckPlayer(w.decks.find(d=>d.id===ui.deckId)); }
+  el.innerHTML=html;
+}
+function openDeck(id){ ui.deckId=id; ui.fcIndex=0; ui.fcShow=false; ui.match=null; render(); }
+function orderedCards(deck){
+  const w=ws(); const due=dueCards(deck).filter(c=>w.reviews[c.id]);
+  const fresh=dueCards(deck).filter(c=>!w.reviews[c.id]).slice(0,Math.max(0,DAILY_NEW_LIMIT-introducedToday()));
+  return [...due,...fresh];
+}
+function deckPlayer(deck){
+  if(!deck) return "";
+  const cards=orderedCards(deck);
+  if(ui.match) return matchingHTML(deck);
+  if(!cards.length) return `<div class="card small muted" style="margin-top:8px">Nada para revisar agora neste baralho ✓
+    <button class="btn tiny" style="margin-left:8px" onclick="ui.match=true;render()">Jogar associação</button></div>`;
+  const i=Math.min(ui.fcIndex,cards.length-1); const c=cards[i];
+  const show=ui.fcShow;
+  return `<div class="fc" style="margin-top:8px">
+    <div class="label">${show?"VERSO":"FRENTE"} · ${i+1} de ${cards.length}</div>
+    <div class="body">${esc(show?c.back:c.front)}</div>
+    <div style="margin-top:12px"><button class="btn blue" onclick="ui.fcShow=!ui.fcShow;render()">${show?"Ver pergunta":"Virar cartão"}</button></div>
+    ${show?`<div class="row" style="justify-content:center;margin-top:10px">
+      <button class="btn" onclick="rateCard('${deck.id}','${c.id}','hard')">Difícil</button>
+      <button class="btn pri" onclick="rateCard('${deck.id}','${c.id}','good')">Bom</button>
+      <button class="btn" onclick="rateCard('${deck.id}','${c.id}','easy')">Fácil</button></div>
+    <div class="tiny dim" style="margin-top:6px">Vire e avalie — a revisão espaçada agenda a próxima volta.</div>`:""}
+    <div style="margin-top:10px"><button class="btn tiny" onclick="ui.match=true;render()">🧩 Associar em vez de repetir</button></div>
+  </div>`;
+}
+function rateCard(deckId,cardId,rating){
+  const w=ws(); const now=Date.now();
+  let r=w.reviews[cardId];
+  if(!r){ r={due:now,interval:0,ease:2.5,reps:0,introduced:todayKey()}; w.reviews[cardId]=r; }
+  r.reps++; r.last=rating;
+  if(rating==="hard"){ r.due=now+10*60*1000; r.ease=Math.max(1.3,r.ease-0.2); }
+  else if(rating==="good"){ r.interval=r.interval===0?1:r.interval*r.ease; r.ease=Math.min(2.8,r.ease+0.05); r.due=now+r.interval*86400000; }
+  else { r.interval=r.interval===0?3:r.interval*r.ease+1; r.ease=Math.min(2.8,r.ease+0.15); r.due=now+r.interval*86400000; }
+  w.activity.push({kind:"review",at:now});
+  ui.fcShow=false; ui.fcIndex++; save(); render();
+}
+function matchingHTML(deck){
+  if(!ui.match) ui.match = buildMatch(deck);
+  const M=ui.match;
+  const done=M.pairs.filter(p=>M.ok.has(p.id)).length;
+  let html=`<div class="card" style="margin-top:8px">
+    <div class="row small muted"><span>Toque um termo e a definição correspondente.</span><span class="spacer"></span><span>${done}/${M.pairs.length} · ${M.attempts} tentativas</span></div>`;
+  if(done===M.pairs.length){
+    html+=`<div style="text-align:center;padding:10px"><strong style="color:var(--green)">Todos pareados!</strong>
+      <div class="tiny dim">A associação não altera a revisão espaçada.</div>
+      <button class="btn pri tiny" style="margin-top:8px" onclick="ui.match=buildMatch(deckById('${deck.id}'));render()">Nova rodada</button>
+      <button class="btn tiny" style="margin-top:8px" onclick="ui.match=null;render()">Voltar aos cartões</button></div>`;
+  } else {
+    html+=`<div class="match-cols" style="margin-top:10px">
+      <div>${M.fronts.map(f=>`<button class="mitem ${M.sel===f?'sel':''} ${M.ok.has(M.byFront[f])?'ok':''}" ${M.ok.has(M.byFront[f])?'disabled':''}
+        onclick="matchTap('${deck.id}','front','${esc(f).replace(/'/g,"&#39;")}')">${esc(f)}</button>`).join("")}</div>
+      <div>${M.backs.map(b=>`<button class="mitem ${M.wrong===b?'sel':''} ${M.ok.has(M.byBack[b])?'ok':''}" ${M.ok.has(M.byBack[b])?'disabled':''}
+        onclick="matchTap('${deck.id}','back','${esc(b).replace(/'/g,"&#39;")}')">${esc(b)}</button>`).join("")}</div>
+    </div>
+    <button class="btn tiny" style="margin-top:8px" onclick="ui.match=null;render()">Voltar aos cartões</button></div>`;
+  }
+  return html;
+}
+function deckById(id){ return ws().decks.find(d=>d.id===id); }
+function buildMatch(deck){
+  const seen=new Set(); const pairs=[];
+  for(const c of dueCards(deck).concat(deck.cards)){
+    if(pairs.length>=6) break;
+    if(seen.has(c.front)||seen.has(c.back)) continue;
+    seen.add(c.front); seen.add(c.back);
+    pairs.push({id:c.id,front:c.front,back:c.back});
+  }
+  const shuf=a=>a.map(x=>[Math.random(),x]).sort((p,q)=>p[0]-q[0]).map(p=>p[1]);
+  const byFront={},byBack={}; pairs.forEach(p=>{byFront[p.front]=p.id;byBack[p.back]=p.id;});
+  return {pairs,fronts:shuf(pairs.map(p=>p.front)),backs:shuf(pairs.map(p=>p.back)),byFront,byBack,sel:null,wrong:null,ok:new Set(),attempts:0};
+}
+function matchTap(deckId,side,text){
+  const M=ui.match; if(!M) return;
+  if(side==="front"){ M.sel = M.sel===text?null:text; }
+  else{
+    if(!M.sel) return;
+    M.attempts++;
+    const fid=M.byFront[M.sel], bid=M.byBack[text];
+    if(fid&&fid===bid){ M.ok.add(fid); M.sel=null; M.wrong=null; }
+    else{ M.wrong=text; M.sel=null; setTimeout(()=>{ if(ui.match&&ui.match.wrong===text){ui.match.wrong=null;render();} },500); }
+  }
+  render();
+}
+
+function renderQuestionFlow(){
+  const w=ws(); const el=document.getElementById("revisaoArea");
+  if(ui.qIndex==null || !w.questions[ui.qIndex]) return;
+  const q=w.questions[ui.qIndex];
+  const host=document.createElement("div"); el.prepend(host);
+  const labels=["A","B","C","D","E"];
+  let html=`<div class="card" style="margin:8px 0"><div class="tiny dim" style="margin-bottom:6px">RESPONDA ANTES DE VERIFICAR</div>
+    <div>${esc(q.stem)}</div>`;
+  q.options.forEach((o,i)=>{
+    let cls="opt"; if(ui.qSel===i) cls+=" sel";
+    if(ui.qFeedback!=null){ if(i===q.correct) cls+=" right"; else if(i===ui.qSel) cls+=" wrong"; }
+    html+=`<button class="${cls}" onclick="answerQ(${i})" ${ui.qFeedback!=null?'disabled':''}><strong>${labels[i]})</strong> ${esc(o)}</button>`;
+  });
+  if(ui.qFeedback==null){
+    html+=`<div class="row" style="margin-top:10px;justify-content:flex-end"><button class="btn pri" onclick="verifyQ()" ${ui.qSel==null?'disabled':''}>Verificar resposta</button></div>`;
+  } else {
+    const right=ui.qSel===q.correct;
+    html+=`<div style="margin-top:10px;font-weight:700;color:${right?'var(--green)':'var(--red)'}">${right?"✓ Correto!":"✗ Ainda não."}
+      <span class="small muted" style="font-weight:400"> ${esc(q.why||"")}</span></div>
+      <div class="row" style="margin-top:8px"><button class="btn tiny" onclick="ui.qIndex=null;ui.qFeedback=null;render()">Fechar</button></div>`;
+  }
+  html+=`</div>`;
+  host.outerHTML=html;
+}
+function answerQ(i){ if(ui.qFeedback!=null) return; ui.qSel=i; render(); }
+function verifyQ(){
+  const w=ws(); const q=w.questions[ui.qIndex]; if(q==null||ui.qSel==null) return;
+  ui.qFeedback=true;
+  w.activity.push({kind:"review",at:Date.now()});
+  save(); render();
+  if(ui.qSel!==q.correct) toast("Tente reler a explicação e entender o porquê.");
+}
+
+/* ============ CADERNO ============ */
+function viewCaderno(){
+  const w=ws(); const nb=w.notebooks[0]||{title:"Caderno 1",text:""};
+  return `<div class="view">
+    <div class="row"><h2 class="vt grow">📓 ${esc(nb.title)}</h2></div>
+    <p class="muted small" style="margin:4px 0 10px">Escreva livre. Selecione um parágrafo (ou deixe o cursor nele) e transforme em item de revisão.</p>
+    <textarea class="nb-editor" id="nbText" oninput="notebookEdited(this.value)">${esc(nb.text)}</textarea>
+    <div class="row wrap" style="margin-top:10px">
+      <button class="btn" onclick="nbTransform('flashcard')">🃏 → Flashcard</button>
+      <button class="btn" onclick="nbTransform('tarefa')">☑️ → Tarefa</button>
+      <button class="btn" onclick="nbTransform('questão')">❓ → Questão</button>
+      <span class="dim small" id="nbMsg"></span>
+    </div>
+    <hr>
+    <div class="grid2">
+      <div><h3 class="small" style="margin-bottom:8px">Flashcards do caderno</h3>
+        ${w.decks.length?w.decks.map(d=>`<div class="deckrow">🃏 ${esc(d.title)}<span class="spacer"></span><span class="tiny dim">${d.cards.length} cartões</span></div>`).join(""):`<div class="dim small">Nenhum ainda.</div>`}</div>
+      <div><h3 class="small" style="margin-bottom:8px">Questões do caderno</h3>
+        ${w.questions.length?w.questions.map(q=>`<div class="deckrow">❓ ${esc(q.stem.slice(0,70))}…</div>`).join(""):`<div class="dim small">Nenhuma ainda.</div>`}</div>
+    </div>
+  </div>`;
+}
+function notebookEdited(v){ ws().notebooks[0].text=v; debouncedSave(); }
+function nbParagraph(){
+  const ta=document.getElementById("nbText"); if(!ta) return null;
+  const pos=ta.selectionStart; const text=ta.value;
+  if(!text.trim()){ nbMsg("O caderno está vazio."); return null; }
+  let start=text.lastIndexOf("\n",Math.max(0,pos-1))+1;
+  let end=text.indexOf("\n",pos); if(end<0) end=text.length;
+  const p=text.slice(start,end).trim();
+  if(!p){ nbMsg("O cursor está numa linha vazia."); return null; }
+  return p;
+}
+function nbMsg(m){ const el=document.getElementById("nbMsg"); if(el) el.textContent=m; setTimeout(()=>{ if(el) el.textContent=""; },4000); }
+function nbTransform(kind){
+  const p=nbParagraph(); if(!p) return;
+  const w=ws();
+  if(kind==="flashcard"){
+    let front=p,back="";
+    for(const sep of ["\n"," — ",": "]){ const i=p.indexOf(sep); if(i>0){ front=p.slice(0,i); back=p.slice(i+sep.length); break; } }
+    front=front.trim(); back=back.trim();
+    if(!back){ nbMsg("Escreva “pergunta — resposta” em uma linha ou duas."); return; }
+    w.decks.push({id:uid(),title:"Caderno",cards:[{id:uid(),front,back}],createdAt:Date.now()});
+    nbMsg("Flashcard criado — revise no Estudar.");
+  } else if(kind==="tarefa"){
+    w.tasks.push({id:uid(),title:p.slice(0,120),priority:"normal",done:false,due:new Date(Date.now()+86400000).toISOString().slice(0,10)});
+    nbMsg("Tarefa criada — veja no Progresso.");
+  } else {
+    w.questions.push({id:uid(),stem:p,options:[],correct:-1,why:"",createdAt:Date.now(),open:true});
+    nbMsg("Questão registrada — use a IA no Estudar para corrigir sua resposta.");
+  }
+  save(); render();
+}
+
+/* ============ PROGRESSO ============ */
+function viewProgresso(){
+  const w=ws();
+  const decks=w.decks; let due=0,total=0;
+  decks.forEach(d=>{ total+=d.cards.length; due+=dueCount(d); });
+  const practicedToday=w.activity.filter(a=>a.kind==="review"&&todayKey(new Date(a.at))===todayKey()).length;
+  const rated=Object.values(w.reviews).filter(r=>r.last);
+  const good=rated.filter(r=>r.last!=="hard").length;
+  const retention=rated.length?Math.round(100*good/rated.length)+"%":"—";
+  const notesCount=w.notes.length;
+  return `<div class="view">
+    <h2 class="vt">Meu Progresso</h2><p class="muted small">${esc(w.name)}</p>
+    <div class="grid4" style="margin:14px 0">
+      <div class="metric"><div class="l">Flashcards</div><div class="v">${total}</div><div class="small muted">${due} devidos agora</div></div>
+      <div class="metric"><div class="l">Prática hoje</div><div class="v">${practicedToday}</div><div class="small muted">revisões feitas hoje</div></div>
+      <div class="metric"><div class="l">Retenção</div><div class="v">${retention}</div><div class="small muted">últimas avaliações</div></div>
+      <div class="metric"><div class="l">Notas</div><div class="v">${notesCount}</div><div class="small muted">${w.questions.length} questões salvas</div></div>
+    </div>
+    <h3 class="small" style="margin:18px 0 8px">TAREFAS — arraste entre as colunas ou use os botões</h3>
+    <div class="kanban">${["high","normal","low"].map(p=>`
+      <div class="kcol" ondragover="event.preventDefault()" ondrop="dropTask(event,'${p}')">
+        <h5 style="color:${p==="high"?"var(--red)":p==="normal"?"var(--orange)":"var(--muted)"}">${p==="high"?"Alta":p==="normal"?"Normal":"Baixa"}</h5>
+        ${w.tasks.filter(t=>t.priority===p).map(t=>`
+          <div class="kcard ${t.done?'done':''}" draggable="true" ondragstart="dragTask(event,'${t.id}')" onclick="toggleTask('${t.id}')">
+            ${esc(t.title)} <span class="tiny dim">· ${t.due||"sem prazo"}</span>
+            <div class="row tiny" style="margin-top:5px">
+              <button class="btn tiny" onclick="event.stopPropagation();moveTask('${t.id}','high')">↑A</button>
+              <button class="btn tiny" onclick="event.stopPropagation();moveTask('${t.id}','normal')">N</button>
+              <button class="btn tiny" onclick="event.stopPropagation();moveTask('${t.id}','low')">↓B</button>
+              <span class="spacer"></span><button class="btn tiny danger" onclick="event.stopPropagation();delTask('${t.id}')">✕</button>
+            </div>
+          </div>`).join("")}
+      </div>`).join("")}
+    </div>
+    <div class="row" style="margin:12px 0 20px">
+      <input id="newTask" class="grow" placeholder="Nova tarefa… Ex.: Fazer lista 3 de Cálculo" onkeydown="if(event.key==='Enter')addTask()">
+      <select id="newTaskP"><option value="high">Alta</option><option value="normal" selected>Normal</option><option value="low">Baixa</option></select>
+      <button class="btn pri" onclick="addTask()">Adicionar</button>
+    </div>
+    <hr><h3 class="small" style="margin-bottom:10px">PRÁTICA LEVE — CAÇA-PALAVRAS DOS FLASHCARDS</h3>
+    <div id="wsArea">${wordSearchHTML()}</div>
+  </div>`;
+}
+function addTask(){ const el=document.getElementById("newTask"); const v=el.value.trim(); if(!v) return;
+  ws().tasks.push({id:uid(),title:v,priority:document.getElementById("newTaskP").value,done:false,due:new Date(Date.now()+86400000).toISOString().slice(0,10)});
+  el.value=""; save(); render(); }
+function dragTask(ev,id){ ev.dataTransfer.setData("text/plain",id); }
+function dropTask(ev,priority){ const id=ev.dataTransfer.getData("text/plain"); moveTask(id,priority); }
+function moveTask(id,priority){ const t=ws().tasks.find(t=>t.id===id); if(t){ t.priority=priority; save(); render(); } }
+function toggleTask(id){ const t=ws().tasks.find(t=>t.id===id); if(t){ t.done=!t.done; save(); render(); } }
+function delTask(id){ ws().tasks=ws().tasks.filter(t=>t.id!==id); save(); render(); }
+
+/* ---- caça-palavras ---- */
+const WS_DIRS=[[0,1],[0,-1],[1,0],[-1,0],[1,1],[1,-1],[-1,1],[-1,-1]];
+const WS_PALETTE=["#6db3ff","#ffb454","#c6a4ff","#7ef06a","#ff9fc5","#4dd0d0"];
+function wsNormalize(w){ const f=w.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase().replace(/[^A-Z]/g,""); return f.length>=4&&f.length<=12?f:null; }
+function wsVocab(){ const words=[]; ws().decks.forEach(d=>d.cards.forEach(c=>c.front.split(/[^a-zA-ZÀ-ÿ]+/).forEach(x=>words.push(x)))); return words; }
+function wsMake(rawWords,size=12,maxWords=6){
+  const seen=new Set(); let words=[];
+  for(const r of rawWords){ const n=wsNormalize(r); if(n&&!seen.has(n)){ seen.add(n); words.push(n); } }
+  if(words.length<3||words.some(w=>w.length>size)) return null;
+  words=words.sort(()=>Math.random()-.5).slice(0,maxWords).sort((a,b)=>b.length-a.length);
+  const grid=Array.from({length:size},()=>Array(size).fill(" "));
+  const placements=[];
+  for(const word of words){
+    let placed=false;
+    for(let t=0;t<400&&!placed;t++){
+      const [dr,dc]=WS_DIRS[Math.floor(Math.random()*8)];
+      const rows=dr>0?[0,size-word.length]:dr<0?[word.length-1,size-1]:[0,size-1];
+      const cols=dc>0?[0,size-word.length]:dc<0?[word.length-1,size-1]:[0,size-1];
+      const r0=rows[0]+Math.floor(Math.random()*(rows[1]-rows[0]+1));
+      const c0=cols[0]+Math.floor(Math.random()*(cols[1]-cols[0]+1));
+      let ok=true;
+      for(let i=0;i<word.length;i++){ const cell=grid[r0+dr*i]?.[c0+dc*i]; if(cell===undefined||(cell!==" "&&cell!==word[i])){ok=false;break;} }
+      if(!ok) continue;
+      for(let i=0;i<word.length;i++) grid[r0+dr*i][c0+dc*i]=word[i];
+      placements.push({word,r:r0,c:c0,dr,dc}); placed=true;
+    }
+    if(!placed) return null;
+  }
+  const alpha="ABCDEFGHIJLMNOPQRSTUVXZ";
+  for(let r=0;r<size;r++) for(let c=0;c<size;c++) if(grid[r][c]===" ") grid[r][c]=alpha[Math.floor(Math.random()*alpha.length)];
+  return {size,grid,placements};
+}
+function wordSearchHTML(){
+  const vocab=wsVocab();
+  if(vocab.length<3) return `<div class="dim small">Crie flashcards com termos de pelo menos 4 letras para gerar o caça-palavras.</div>`;
+  if(!ui.wsPuzzle) ui.wsPuzzle=wsMake(vocab);
+  const P=ui.wsPuzzle;
+  if(!P) return `<div class="dim small">Não foi possível gerar o caça-palavras com esse vocabulário. <button class="btn tiny" onclick="wsNew()">Tentar de novo</button></div>`;
+  const foundCells=new Map();
+  P.placements.forEach((pl,i)=>{ if(ui.wsFound.has(pl.word)) for(let k=0;k<pl.word.length;k++) foundCells.set((pl.r+pl.dr*k)+"_"+(pl.c+pl.dc*k),i); });
+  let cells="";
+  for(let r=0;r<P.size;r++) for(let c=0;c<P.size;c++){
+    const key=r+"_"+c; const fi=foundCells.get(key);
+    const color=fi!=null?WS_PALETTE[fi%WS_PALETTE.length]:null;
+    cells+=`<div class="ws-cell ${fi!=null?'found':''} ${ui.wsStart&&ui.wsStart.key===key?'start':''}"
+      style="${color?`background:${color}33;color:${color};border-color:${color}55;`:""}"
+      onclick="wsTap(${r},${c})">${P.grid[r][c]}</div>`;
+  }
+  const chips=P.placements.map((pl,i)=>{
+    const f=ui.wsFound.has(pl.word); const col=WS_PALETTE[i%WS_PALETTE.length];
+    return `<span class="ws-chip ${f?'found':''}" style="${f?`color:${col};border-color:${col}66;`:""}">${f?"✓ ":""}${pl.word}</span>`;
+  }).join("");
+  const gridStyle=`grid-template-columns:repeat(${P.size},30px)`;
+  return `<div class="card"><div class="row small muted"><span>Toque a primeira e a última letra — 8 direções, inclusive ao contrário.</span>
+    <span class="spacer"></span><span>${ui.wsFound.size}/${P.placements.length}</span>
+    <button class="btn tiny" onclick="wsReveal()">${ui.wsRevealed?"🙈 Esconder":"👁 Revelar"}</button>
+    <button class="btn tiny" onclick="wsNew()">↻ Novo</button></div>
+    <div style="overflow:auto;margin-top:10px"><div class="ws-grid" style="${gridStyle}">${cells}</div></div>
+    <div style="margin-top:10px">${chips}</div>
+    ${ui.wsFound.size===P.placements.length?'<div style="margin-top:8px;font-weight:700;color:var(--green)">🎉 Todas encontradas!</div>':""}</div>`;
+}
+function wsTap(r,c){
+  const P=ui.wsPuzzle; if(!P) return;
+  const key=r+"_"+c;
+  if(!ui.wsStart){ ui.wsStart={r,c,key}; render(); return; }
+  if(ui.wsStart.key===key){ ui.wsStart=null; render(); return; }
+  const dr=Math.sign(r-ui.wsStart.r), dc=Math.sign(c-ui.wsStart.c);
+  const steps=Math.max(Math.abs(r-ui.wsStart.r),Math.abs(c-ui.wsStart.c));
+  const straight=(r-ui.wsStart.r===0||c-ui.wsStart.c===0||Math.abs(r-ui.wsStart.r)===Math.abs(c-ui.wsStart.c));
+  if(!straight){ ui.wsStart={r,c,key}; render(); return; }
+  let word="";
+  for(let i=0;i<=steps;i++) word+=P.grid[ui.wsStart.r+dr*i][ui.wsStart.c+dc*i];
+  const hit=P.placements.find(pl=>pl.word===word||pl.word===[...word].reverse().join(""));
+  if(hit&&!ui.wsFound.has(hit.word)) ui.wsFound.add(hit.word);
+  ui.wsStart=null; render();
+}
+function wsNew(){ ui.wsPuzzle=wsMake(wsVocab()); ui.wsFound=new Set(); ui.wsStart=null; ui.wsRevealed=false; render(); }
+function wsReveal(){ ui.wsRevealed=!ui.wsRevealed;
+  if(ui.wsRevealed) ui.wsPuzzle?.placements.forEach(pl=>ui.wsFound.add(pl.word));
+  else ui.wsFound=new Set();
+  render(); }
+
+/* ============ AJUSTES ============ */
+function viewAjustes(){
+  const s=state.settings;
+  return `<div class="view" style="max-width:640px">
+    <h2 class="vt">Ajustes</h2>
+    <div class="card" style="margin-top:14px">
+      <h3>IA pedagógica</h3>
+      <p class="muted small" style="margin:6px 0 12px">A IA verifica, explica e cria revisões — sem entregar o gabarito. Use um endpoint compatível com OpenAI e a sua própria chave. A chave fica só neste navegador.</p>
+      <div class="field"><label>Endpoint (chat/completions)</label><input id="setEndpoint" value="${esc(s.endpoint)}"></div>
+      <div class="field"><label>Modelo</label><input id="setModel" value="${esc(s.model)}"></div>
+      <div class="field"><label>Chave de API</label><input id="setKey" type="password" value="${esc(s.key)}" placeholder="sk-…"></div>
+      <div class="row"><button class="btn pri" onclick="saveSettings()">Salvar</button>
+        <button class="btn" onclick="testAI()">Testar conexão</button><span class="small muted" id="aiTest"></span></div>
+    </div>
+    <div class="card" style="margin-top:14px">
+      <h3>Seus dados</h3>
+      <p class="muted small" style="margin:6px 0 12px">Tudo fica no localStorage deste navegador. Faça backup exportando um arquivo JSON.</p>
+      <div class="row wrap">
+        <button class="btn" onclick="exportData()">⬇️ Exportar backup</button>
+        <button class="btn" onclick="document.getElementById('importFile').click()">⬆️ Importar backup</button>
+        <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
+        <button class="btn danger" onclick="resetAll()">Apagar tudo</button>
+      </div>
+    </div>
+    <div class="card" style="margin-top:14px">
+      <h3>Sobre</h3>
+      <p class="muted small">Studyh Web — versão navegador do Studyh. Versão Mac completa em <a href="https://studyh.tech">studyh.tech</a>. Material de texto na web v1; PDF/EPUB chegam em breve.</p>
+    </div>
+  </div>`;
+}
+function saveSettings(){
+  state.settings.endpoint=document.getElementById("setEndpoint").value.trim();
+  state.settings.model=document.getElementById("setModel").value.trim();
+  state.settings.key=document.getElementById("setKey").value.trim();
+  save(); renderAIStatus(); toast("Ajustes salvos.");
+}
+async function testAI(){
+  const el=document.getElementById("aiTest"); el.textContent=" testando…";
+  state.settings.endpoint=document.getElementById("setEndpoint").value.trim();
+  state.settings.model=document.getElementById("setModel").value.trim();
+  state.settings.key=document.getElementById("setKey").value.trim();
+  try{ const r=await aiCall("Responda apenas: OK","Responda apenas: OK"); el.textContent=" ✓ "+r.slice(0,40); renderAIStatus(); }
+  catch(e){ el.textContent=" ✗ "+e.message; }
+}
+function exportData(){
+  const blob=new Blob([JSON.stringify(state,null,2)],{type:"application/json"});
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob);
+  a.download="studyh-backup-"+todayKey()+".json"; a.click();
+}
+function importData(ev){
+  const f=ev.target.files[0]; if(!f) return;
+  const reader=new FileReader();
+  reader.onload=()=>{ try{ const data=JSON.parse(reader.result);
+    if(!data.workspaces) throw new Error();
+    state=data; state.current=state.workspaces[0]?.id; save(); render(); toast("Backup importado.");
+  }catch(e){ toast("Arquivo inválido."); } };
+  reader.readAsText(f);
+}
+function resetAll(){ if(!confirm("Apagar TODOS os dados do Studyh neste navegador?")) return;
+  localStorage.removeItem(STORE_KEY); state=seed(); save(); render(); }
+
+/* ============ busca global ============ */
+function openSearch(){ ui.search=""; modal(`<h3>Buscar em tudo</h3>
+  <input id="searchInput" style="width:100%" placeholder="Digite pelo menos 2 letras…" oninput="doSearch()" onkeydown="if(event.key==='Enter')doSearch()">
+  <div id="searchResults" style="margin-top:12px"></div>
+  <div class="row" style="justify-content:flex-end;margin-top:10px"><button class="btn" onclick="closeModal()">Fechar</button></div>`);
+  document.getElementById("searchInput").focus();
+}
+function doSearch(){
+  const q=document.getElementById("searchInput").value.trim().toLowerCase();
+  const out=document.getElementById("searchResults");
+  if(q.length<2){ out.innerHTML=`<div class="dim small">Digite pelo menos 2 letras.</div>`; return; }
+  const norm=s=>s.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
+  const results=[];
+  ws().materials.forEach(m=>{ if(norm(m.title).includes(q)||norm(m.text).includes(q)) results.push(["📄 Material",m.title,m.text]); });
+  ws().notes.forEach(n=>{ if(norm(n.text).includes(q)) results.push(["📌 Nota",(mat()?.title||""),n.text]); });
+  ws().decks.forEach(d=>d.cards.forEach(c=>{ if(norm(c.front+c.back).includes(q)) results.push(["🃏 Flashcard",d.title,c.front+" → "+c.back]); }));
+  ws().questions.forEach(x=>{ if(norm(x.stem).includes(q)) results.push(["❓ Questão","",x.stem]); });
+  ws().notebooks.forEach(nb=>{ if(norm(nb.text).includes(q)) results.push(["📓 Caderno",nb.title,nb.text]); });
+  const snippet=t=>{ const i=norm(t).indexOf(q); if(i<0) return esc(t.slice(0,120)); const s=Math.max(0,i-40); return (s>0?"…":"")+esc(t.slice(s,i+90))+"…"; };
+  out.innerHTML = results.length
+    ? results.slice(0,30).map(([kind,title,text])=>`<div class="card small" style="margin-bottom:8px"><strong>${kind}</strong> <span class="dim">${esc(title)}</span><div class="muted">${snippet(text)}</div></div>`).join("")
+    : `<div class="dim small">Nada encontrado em “${esc(q)}”.</div>`;
+}
+
+/* ============ modal ============ */
+function modal(html){ document.getElementById("modalRoot").innerHTML=`<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal">${html}</div></div>`; }
+function closeModal(){ document.getElementById("modalRoot").innerHTML=""; }
+
+/* ============ boot ============ */
+if(ws().materials.length && !ui.matId) ui.matId=null;
+render();
+</script>
+</body>
+</html>
