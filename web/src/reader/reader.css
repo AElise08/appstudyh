@@ -1,0 +1,310 @@
+.reader {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  background: #f4f1ea;
+  color: #1a1a1a;
+}
+
+.reader--mobile {
+  background: #faf8f4;
+}
+
+.reader__header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(12px);
+  z-index: 2;
+}
+
+.reader__back,
+.reader__quote-btn,
+.reader__icon-btn {
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  background: #fff;
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.reader__back {
+  min-width: 40px;
+  font-size: 18px;
+  line-height: 1;
+  padding: 8px 12px;
+}
+
+.reader__icon-btn {
+  font-weight: 600;
+  font-size: 13px;
+  color: #444;
+}
+
+.reader__heading {
+  flex: 1;
+  min-width: 0;
+}
+
+.reader__title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.reader__progress {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: #888;
+}
+
+.reader__epub-settings {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  background: #fff;
+}
+
+.reader__epub-settings button,
+.reader__epub-settings select {
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  background: #fff;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 13px;
+}
+
+.reader__body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.reader--mobile .reader__body {
+  padding: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.reader:not(.reader--mobile) .reader__body {
+  padding: 12px;
+}
+
+.reader__editor {
+  width: 100%;
+  min-height: 60vh;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
+  padding: 16px;
+  resize: vertical;
+  line-height: 1.6;
+  background: #fff;
+}
+
+.reader__text {
+  margin: 0;
+  white-space: pre-wrap;
+  line-height: 1.65;
+  font-family: inherit;
+}
+
+.reader__text--prose {
+  padding: 20px 18px;
+  font-family: Georgia, "Iowan Old Style", "Palatino Linotype", serif;
+  font-size: 17px;
+  color: #222;
+}
+
+.reader__note {
+  height: 100%;
+}
+
+.reader__hint {
+  color: #666;
+  text-align: center;
+  margin-top: 40px;
+  padding: 0 20px;
+}
+
+.reader__hint--error {
+  color: #b42318;
+}
+
+.reader__web {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+}
+
+/* Barra de seleção (mobile) */
+.reader__selection-bar {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: calc(28px + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: #1a1a1a;
+  color: #fff;
+  z-index: 55;
+  border-radius: 14px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.28);
+}
+
+.reader__selection-preview {
+  flex: 1;
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.35;
+  opacity: 0.9;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.reader__selection-btn {
+  flex-shrink: 0;
+  border: none;
+  background: #5b7fff;
+  color: #fff;
+  border-radius: 999px;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* Progresso inferior — só barra fina, sem setas */
+.reader__footer {
+  z-index: 2;
+}
+
+.reader__footer--minimal {
+  padding: 0 0 env(safe-area-inset-bottom, 0px);
+  border-top: none;
+  background: transparent;
+}
+
+.reader__footer--minimal .reader__footer-progress {
+  height: 3px;
+  border-radius: 0;
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.reader__footer-progress {
+  width: 100%;
+  height: 4px;
+  background: rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+
+.reader__footer-fill {
+  height: 100%;
+  background: #5b7fff;
+  transition: width 0.2s ease;
+}
+
+.reader__overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  z-index: 60;
+}
+
+.reader__modal {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(480px, calc(100vw - 32px));
+  background: #fff;
+  border-radius: 16px;
+  padding: 16px;
+  z-index: 61;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.2);
+}
+
+.reader__modal--sheet {
+  left: 0;
+  right: 0;
+  top: auto;
+  bottom: 0;
+  transform: none;
+  width: auto;
+  border-radius: 16px 16px 0 0;
+  padding: 18px 16px calc(18px + env(safe-area-inset-bottom, 0px));
+  box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.15);
+}
+
+.reader__quote {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-left: 3px solid #5b7fff;
+  background: #f7f5f0;
+  font-size: 14px;
+  line-height: 1.5;
+  font-family: Georgia, serif;
+  max-height: 120px;
+  overflow: auto;
+}
+
+.reader__modal textarea {
+  width: 100%;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  padding: 12px;
+  resize: vertical;
+  line-height: 1.5;
+  font-size: 15px;
+}
+
+.reader__modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.reader__primary {
+  background: #1a1a1a;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-weight: 500;
+}
+
+.reader__primary:disabled {
+  opacity: 0.5;
+}
+
+@media (min-width: 721px) {
+  .reader__footer {
+    display: none;
+  }
+
+  .reader__selection-bar {
+    position: fixed;
+    left: 50%;
+    bottom: 24px;
+    transform: translateX(-50%);
+    width: min(520px, calc(100vw - 32px));
+    border-radius: 14px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  }
+}

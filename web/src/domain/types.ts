@@ -86,6 +86,7 @@ export interface CanvasNode {
   pdfNavigationQuote?: string | null;
   epubBookmark?: Base64String | null;
   epubText?: string | null;
+  epubCoverDataUrl?: string | null;
   epubPageIndex?: number | null;
   epubFontSize?: number | null;
   epubTheme?: EPUBReaderTheme | null;

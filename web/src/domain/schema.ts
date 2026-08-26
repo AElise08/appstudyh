@@ -157,6 +157,7 @@ const node: Validator = (value, path) =>
       pdfNavigationQuote: nullable(string),
       epubBookmark: nullable(string),
       epubText: nullable(string),
+      epubCoverDataUrl: nullable(string),
       epubPageIndex: nullable(integer),
       epubFontSize: nullable(number),
       epubTheme: nullable(oneOf(["automatic", "light", "dark"])),

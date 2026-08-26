@@ -1,0 +1,72 @@
+.pdf-thumb {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px;
+  background: #f7f7f5;
+}
+
+.pdf-thumb__canvas {
+  display: none;
+  max-width: 100%;
+  max-height: calc(100% - 24px);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  background: #fff;
+}
+
+.pdf-thumb__canvas.is-ready {
+  display: block;
+}
+
+.pdf-thumb__status {
+  font-size: 11px;
+  color: #777;
+  text-align: center;
+  padding: 0 6px;
+}
+
+.pdf-thumb__status--warn {
+  color: #b42318;
+}
+
+.pdf-thumb__label {
+  font-size: 11px;
+  color: #666;
+}
+
+.pdf-thumb--row {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  gap: 0;
+  justify-content: stretch;
+}
+
+.pdf-thumb--row .pdf-thumb__canvas {
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  object-fit: cover;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.pdf-thumb--row .pdf-thumb__status {
+  font-size: 9px;
+  padding: 4px;
+  line-height: 1.2;
+}
+
+.pdf-thumb--row .pdf-thumb__label {
+  display: none;
+}

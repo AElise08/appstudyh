@@ -46,6 +46,18 @@ describe("WorkspaceStore", () => {
     );
   });
 
+  it("salva e recupera anexos", async () => {
+    const store = await freshStore();
+    const blob = new Blob([new Uint8Array([0x25, 0x50, 0x44, 0x46])], { type: "application/pdf" });
+    await store.saveAttachment("pdf-node", blob);
+    const reloaded = await freshStore();
+    const back = await reloaded.getAttachment("pdf-node");
+    expect(back).not.toBeNull();
+    const bytes = new Uint8Array(await back!.arrayBuffer());
+    expect(bytes[0]).toBe(0x25);
+    expect(bytes[1]).toBe(0x50);
+  });
+
   it("bloqueia escrita diante de versão futura preservando dados", async () => {
     const store = await freshStore();
     const ws = await store.createWorkspace("Futuro");

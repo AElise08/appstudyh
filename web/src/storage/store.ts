@@ -315,16 +315,43 @@ export class WorkspaceStore {
 
   async saveAttachment(id: string, blob: Blob): Promise<void> {
     this.assertWritable();
+    const bytes = new Uint8Array(await blob.arrayBuffer());
+    const mimeType = blob.type || "application/octet-stream";
     await withStore(ATTACHMENTS, "readwrite", (s) => {
-      s.put({ id, blob });
+      s.put({ id, bytes, mimeType });
     });
   }
 
   async getAttachment(id: string): Promise<Blob | null> {
-    const rec = await withStore<{ id: string; blob: Blob } | undefined>(ATTACHMENTS, "readonly", (s) =>
-      s.get(id),
-    );
-    return rec?.blob ?? null;
+    interface AttachmentRecord {
+      id: string;
+      bytes?: Uint8Array | ArrayBuffer;
+      mimeType?: string;
+      buffer?: ArrayBuffer;
+      blob?: Blob;
+    }
+    const rec = await withStore<AttachmentRecord | undefined>(ATTACHMENTS, "readonly", (s) => s.get(id));
+    if (rec === undefined) return null;
+
+    const mime = rec.mimeType || "application/octet-stream";
+
+    if (rec.bytes !== undefined) {
+      const raw = rec.bytes;
+      const view = raw instanceof Uint8Array ? raw : new Uint8Array(raw);
+      const copy = new Uint8Array(view);
+      return new Blob([copy], { type: mime });
+    }
+    if (rec.buffer !== undefined) {
+      return new Blob([rec.buffer], { type: mime });
+    }
+    return rec.blob ?? null;
+  }
+
+  async deleteAttachment(id: string): Promise<void> {
+    this.assertWritable();
+    await withStore(ATTACHMENTS, "readwrite", (s) => {
+      s.delete(id);
+    });
   }
 
   exportPackage(workspaces: Workspace[]): Record<string, unknown> {

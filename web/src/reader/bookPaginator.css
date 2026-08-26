@@ -1,0 +1,118 @@
+.book-paginator {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--book-bg, #faf8f4);
+  color: var(--book-fg, #1f1f1f);
+  touch-action: manipulation;
+  padding: 16px 18px calc(32px + env(safe-area-inset-bottom, 0px));
+  box-sizing: border-box;
+}
+
+.book-paginator[data-theme="dark"] {
+  --book-bg: #1c1c1e;
+  --book-fg: #f0f0f0;
+}
+
+@media (prefers-color-scheme: dark) {
+  .book-paginator[data-theme="automatic"] {
+    --book-bg: #1c1c1e;
+    --book-fg: #f0f0f0;
+  }
+}
+
+.book-paginator__frame {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.book-paginator__sheet {
+  position: relative;
+  column-gap: 0;
+  column-fill: auto;
+  box-sizing: border-box;
+  font-family: Georgia, "Iowan Old Style", "Palatino Linotype", serif;
+  line-height: 1.65;
+  text-align: left;
+  hyphens: none;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  transition: transform 0.22s ease-out;
+  will-change: transform;
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.book-paginator__sheet h1,
+.book-paginator__sheet h2,
+.book-paginator__sheet h3 {
+  font-family: system-ui, -apple-system, sans-serif;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  margin: 0.6em 0 0.4em;
+}
+
+.book-paginator__sheet p {
+  margin: 0 0 0.85em;
+}
+
+.book-paginator__sheet img,
+.book-paginator__sheet .epub-cover {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 0.75em auto;
+  border-radius: 4px;
+}
+
+.book-paginator__sheet a {
+  color: #3d5ccc;
+  text-decoration: underline;
+  overflow-wrap: anywhere;
+}
+
+.book-paginator__sheet .book-chapter-break {
+  height: 0;
+  margin: 0;
+  break-after: column;
+}
+
+.book-nav {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  pointer-events: none;
+}
+
+.book-nav__zone {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 30%;
+  border: none;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  pointer-events: auto;
+  -webkit-tap-highlight-color: transparent;
+  cursor: pointer;
+}
+
+.book-nav__zone--left {
+  left: 0;
+}
+
+.book-nav__zone--right {
+  right: 0;
+}
+
+.book-nav__zone:disabled {
+  pointer-events: none;
+}
+
+.book-nav__zone:active:not(:disabled) {
+  background: rgba(0, 0, 0, 0.04);
+}

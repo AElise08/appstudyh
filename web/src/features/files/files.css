@@ -109,11 +109,52 @@
   background: #ffffff;
 }
 
+.pdf-reader--embedded {
+  --files-bg: #f4f1ea;
+  --files-panel: #f4f1ea;
+  --files-border: rgba(0, 0, 0, 0.06);
+  --files-fg: #1a1a1a;
+  --files-muted: #777;
+  --files-accent: #5b7fff;
+  height: 100%;
+  flex: 1;
+  min-height: 0;
+}
+
+.pdf-reader--embedded .pdf-reader__stage {
+  border: none;
+  border-radius: 0;
+  padding: 8px 10px 12px;
+  background: transparent;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  touch-action: manipulation;
+}
+
+.pdf-reader--embedded .pdf-reader__page {
+  position: relative;
+  z-index: 1;
+}
+
+.pdf-reader--embedded .pdf-reader__page {
+  box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
 .pdf-reader__textlayer {
   position: absolute;
   inset: 0;
   overflow: hidden;
   line-height: 1;
+  user-select: text;
+  -webkit-user-select: text;
+  pointer-events: auto;
 }
 
 .pdf-reader__textlayer span {
@@ -122,6 +163,8 @@
   white-space: pre;
   cursor: text;
   transform-origin: 0 0;
+  user-select: text;
+  -webkit-user-select: text;
 }
 
 .pdf-reader .files-loading,
@@ -213,6 +256,57 @@
   background: var(--files-panel, #1a1d24);
   color: var(--files-fg, #e7eaf2);
   padding: 8px 10px;
+}
+
+.epub-reader--book {
+  height: 100%;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.epub-book-reader {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.epub-reader--embedded[data-theme="dark"] {
+  --epub-page-bg: #1c1c1e;
+  --epub-page-fg: #f2f2f2;
+}
+
+.epub-reader--embedded .epub-reader__content {
+  border: none;
+  border-radius: 0;
+  padding: 20px 20px 32px;
+  max-width: 42rem;
+  margin: 0 auto;
+  font-family: Georgia, "Iowan Old Style", "Palatino Linotype", serif;
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.epub-reader--embedded .epub-reader__chapter {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.epub-reader--embedded .epub-reader__chapter p {
+  margin: 0 0 1em;
+  text-align: justify;
+  hyphens: auto;
+}
+
+.epub-reader--embedded .epub-reader__chapter h1,
+.epub-reader--embedded .epub-reader__chapter h2,
+.epub-reader--embedded .epub-reader__chapter h3 {
+  font-family: system-ui, -apple-system, sans-serif;
+  font-weight: 650;
+  letter-spacing: -0.02em;
 }
 
 /* ---------- Import dropzone ---------- */

@@ -1,0 +1,112 @@
+.matter__backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  z-index: 40;
+}
+
+.matter {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: min(320px, 88vw);
+  height: 100%;
+  background: #fff;
+  z-index: 41;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 8px 0 32px rgba(0, 0, 0, 0.12);
+  color: #1a1a1a;
+}
+
+.matter__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.matter__header h2 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.matter__close {
+  border: none;
+  background: transparent;
+  font-size: 24px;
+  color: #666;
+}
+
+.matter__list {
+  list-style: none;
+  margin: 0;
+  padding: 8px;
+  flex: 1;
+  overflow: auto;
+}
+
+.matter__list li {
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+
+.matter__item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: #fafafa;
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.matter__item.is-selected {
+  border-color: #5b7fff;
+  background: rgba(91, 127, 255, 0.08);
+}
+
+.matter__name {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.matter__meta {
+  font-size: 11px;
+  color: #777;
+  margin-top: 2px;
+}
+
+.matter__delete {
+  width: 36px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: #fff;
+  border-radius: 8px;
+  color: #b42318;
+}
+
+.matter__actions {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.matter__btn {
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  background: #fff;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 14px;
+}
+
+.matter__btn--primary {
+  background: #1a1a1a;
+  color: #fff;
+  border-color: #1a1a1a;
+}

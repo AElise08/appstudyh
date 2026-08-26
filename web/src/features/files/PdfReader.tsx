@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import type { PDFDocumentProxy } from "pdfjs-dist";
 import { pdfjsLib } from "./pdf.js";
+import { renderPdfPageToCanvas, type TextSpan } from "./pdfRender.js";
+import { useBookNavigation } from "../../reader/useBookNavigation.js";
+import BookNavLayer from "../../reader/BookNavLayer.js";
 import "./files.css";
 
 export interface PdfReaderProps {
@@ -9,17 +12,9 @@ export interface PdfReaderProps {
   onPageChange: (index: number) => void;
   onPageCount: (count: number) => void;
   zoom?: number;
+  /** embedded = sem barra interna; o ReaderView controla a navegação */
+  variant?: "standalone" | "embedded";
 }
-
-interface TextSpan {
-  left: number;
-  top: number;
-  width: number;
-  height: number;
-  text: string;
-}
-
-const MAX_DPR = 3;
 
 export default function PdfReader({
   file,
@@ -27,10 +22,12 @@ export default function PdfReader({
   onPageChange,
   onPageCount,
   zoom = 1,
+  variant = "standalone",
 }: PdfReaderProps) {
   const stageRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const taskRef = useRef<ReturnType<typeof pdfjsLib.getDocument> | null>(null);
+  const renderGenRef = useRef(0);
 
   const [numPages, setNumPages] = useState(0);
   const [doc, setDoc] = useState<PDFDocumentProxy | null>(null);
@@ -44,12 +41,12 @@ export default function PdfReader({
   useEffect(() => {
     const el = stageRef.current;
     if (el === null) return;
-    const update = () => setStageWidth(el.clientWidth - 24);
+    const update = () => setStageWidth(el.clientWidth - (variant === "embedded" ? 16 : 24));
     update();
     const observer = new ResizeObserver(update);
     observer.observe(el);
     return () => observer.disconnect();
-  }, []);
+  }, [variant]);
 
   useEffect(() => {
     let cancelled = false;
@@ -60,7 +57,11 @@ export default function PdfReader({
     void (async () => {
       try {
         const data = new Uint8Array(await file.arrayBuffer());
-        const loadingTask = pdfjsLib.getDocument({ data });
+        const loadingTask = pdfjsLib.getDocument({
+          data,
+          disableStream: true,
+          disableAutoFetch: true,
+        });
         taskRef.current = loadingTask;
         const loaded = await loadingTask.promise;
         if (cancelled) {
@@ -92,90 +93,81 @@ export default function PdfReader({
   useEffect(() => {
     const canvas = canvasRef.current;
     if (doc === null || canvas === null || stageWidth <= 0) return;
+
+    const generation = ++renderGenRef.current;
     let cancelled = false;
-    let task: { cancel: () => void; promise: Promise<void> } | null = null;
+
     void (async () => {
       try {
         setLoading(true);
         setSpans([]);
+        setError(null);
+
         const page = await doc.getPage(clampedIndex + 1);
-        if (cancelled) return;
+        if (cancelled || generation !== renderGenRef.current) return;
 
-        const dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR);
-        const base = page.getViewport({ scale: 1 });
-        const scale = (stageWidth / base.width) * zoom;
-        const viewport = page.getViewport({ scale });
+        const rendered = await renderPdfPageToCanvas(page, canvas, stageWidth, zoom, true);
+        if (cancelled || generation !== renderGenRef.current) return;
 
-        canvas.width = Math.floor(viewport.width * dpr);
-        canvas.height = Math.floor(viewport.height * dpr);
-        canvas.style.width = `${Math.floor(viewport.width)}px`;
-        canvas.style.height = `${Math.floor(viewport.height)}px`;
-
-        const renderTask = page.render({
-          canvas,
-          viewport,
-          transform: dpr !== 1 ? [dpr, 0, 0, dpr, 0, 0] : undefined,
-        });
-        task = renderTask;
-        await renderTask.promise;
-        if (cancelled) return;
-
-        const content = await page.getTextContent();
-        if (cancelled) return;
-        const next: TextSpan[] = [];
-        for (const item of content.items) {
-          if (!("str" in item) || item.str.length === 0) continue;
-          const tx = pdfjsLib.Util.transform(viewport.transform, item.transform);
-          const fontHeight = Math.hypot(tx[2], tx[3]);
-          next.push({
-            left: tx[4],
-            top: tx[5] - fontHeight,
-            width: item.width * scale,
-            height: fontHeight * 1.25,
-            text: item.str,
-          });
-        }
-        setSpans(next);
+        setSpans(rendered.spans);
         setLoading(false);
       } catch (err) {
-        if (cancelled) return;
+        if (cancelled || generation !== renderGenRef.current) return;
         const name = (err as { name?: string } | null)?.name ?? "";
         if (name === "RenderingCancelledException") return;
-        setError("Falha ao desenhar a página.");
+        setError(
+          err instanceof Error ? `Falha ao desenhar a página: ${err.message}` : "Falha ao desenhar a página.",
+        );
         setLoading(false);
       }
     })();
+
     return () => {
       cancelled = true;
-      task?.cancel();
     };
   }, [doc, clampedIndex, numPages, zoom, stageWidth]);
 
-  return (
-    <div className="pdf-reader">
-      <div className="files-bar">
-        <button
-          type="button"
-          className="files-btn"
-          onClick={() => onPageChange(clampedIndex - 1)}
-          disabled={loading || clampedIndex <= 0}
-        >
-          ← Anterior
-        </button>
-        <span className="files-pos">
-          pág. {numPages === 0 ? "–" : clampedIndex + 1} de {numPages === 0 ? "–" : numPages}
-        </span>
-        <button
-          type="button"
-          className="files-btn"
-          onClick={() => onPageChange(clampedIndex + 1)}
-          disabled={loading || numPages === 0 || clampedIndex >= numPages - 1}
-        >
-          Próxima →
-        </button>
-      </div>
+  const bookNav = useBookNavigation(
+    clampedIndex,
+    numPages,
+    onPageChange,
+    variant === "embedded" && numPages > 0,
+  );
 
-      <div className="pdf-reader__stage" ref={stageRef}>
+  return (
+    <div className={`pdf-reader${variant === "embedded" ? " pdf-reader--embedded" : ""}`}>
+      {variant === "standalone" && (
+        <div className="files-bar">
+          <button
+            type="button"
+            className="files-btn"
+            onClick={() => onPageChange(clampedIndex - 1)}
+            disabled={loading || clampedIndex <= 0}
+          >
+            ← Anterior
+          </button>
+          <span className="files-pos">
+            pág. {numPages === 0 ? "–" : clampedIndex + 1} de {numPages === 0 ? "–" : numPages}
+          </span>
+          <button
+            type="button"
+            className="files-btn"
+            onClick={() => onPageChange(clampedIndex + 1)}
+            disabled={loading || numPages === 0 || clampedIndex >= numPages - 1}
+          >
+            Próxima →
+          </button>
+        </div>
+      )}
+
+      <div
+        className="pdf-reader__stage"
+        ref={stageRef}
+        onTouchStart={variant === "embedded" ? bookNav.onTouchStart : undefined}
+        onTouchEnd={variant === "embedded" ? bookNav.onTouchEnd : undefined}
+        onPointerDown={variant === "embedded" ? bookNav.onPointerDown : undefined}
+        onPointerUp={variant === "embedded" ? bookNav.onPointerUp : undefined}
+      >
         <div className="pdf-reader__page">
           <canvas ref={canvasRef} />
           <div className="pdf-reader__textlayer">
@@ -187,6 +179,8 @@ export default function PdfReader({
                   top: `${span.top}px`,
                   width: `${span.width}px`,
                   height: `${span.height}px`,
+                  fontSize: `${span.fontSize}px`,
+                  transform: span.angle !== 0 ? `rotate(${span.angle}rad)` : undefined,
                 }}
               >
                 {span.text}
@@ -194,6 +188,14 @@ export default function PdfReader({
             ))}
           </div>
         </div>
+        {variant === "embedded" && (
+          <BookNavLayer
+            pageIndex={clampedIndex}
+            pageCount={numPages}
+            onPrev={() => onPageChange(clampedIndex - 1)}
+            onNext={() => onPageChange(clampedIndex + 1)}
+          />
+        )}
         {loading && <div className="files-loading">Carregando…</div>}
         {error !== null && <div className="files-error">{error}</div>}
       </div>

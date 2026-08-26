@@ -1,3 +1,4 @@
+import "./polyfills.js";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import App from "./app/App";
@@ -11,3 +12,20 @@ createRoot(rootElement).render(
     <App />
   </StrictMode>,
 );
+
+if ("serviceWorker" in navigator) {
+  if (import.meta.env.DEV) {
+    // Nunca deixe o PWA interceptar módulos do Vite: isso congela versões antigas
+    // do app e torna o hot reload imprevisível.
+    void navigator.serviceWorker.getRegistrations().then((registrations) =>
+      Promise.all(registrations.map((registration) => registration.unregister())),
+    );
+    if ("caches" in window) {
+      void caches.keys().then((keys) => Promise.all(keys.map((key) => caches.delete(key))));
+    }
+  } else {
+    window.addEventListener("load", () => {
+      void navigator.serviceWorker.register("/sw.js").catch(() => undefined);
+    });
+  }
+}

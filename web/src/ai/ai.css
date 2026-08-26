@@ -1,0 +1,99 @@
+.lasso-bar {
+  position: fixed;
+  left: 50%;
+  bottom: 16px;
+  transform: translateX(-50%);
+  width: min(560px, calc(100vw - 24px));
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 14px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.14);
+  padding: 14px 16px;
+  z-index: 30;
+  color: #1a1a1a;
+}
+
+.lasso-bar__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.lasso-bar__close {
+  border: none;
+  background: transparent;
+  font-size: 22px;
+  line-height: 1;
+  color: #666;
+}
+
+.lasso-bar__hint {
+  margin: 0 0 10px;
+  font-size: 12px;
+  color: #666;
+}
+
+.lasso-bar__modes {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.lasso-bar__mode {
+  flex: 1;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  background: #fafafa;
+  border-radius: 8px;
+  padding: 6px 8px;
+  font-size: 12px;
+}
+
+.lasso-bar__mode.is-active {
+  border-color: #5b7fff;
+  background: rgba(91, 127, 255, 0.1);
+  color: #3d5ccc;
+}
+
+.lasso-bar__help {
+  margin: 0 0 10px;
+  font-size: 12px;
+  color: #777;
+}
+
+.lasso-bar__run {
+  width: 100%;
+  border: none;
+  border-radius: 8px;
+  background: #1a1a1a;
+  color: #fff;
+  padding: 10px 12px;
+  font-size: 14px;
+}
+
+.lasso-bar__run:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.lasso-bar__error {
+  margin: 10px 0 0;
+  color: #b42318;
+  font-size: 13px;
+}
+
+.lasso-bar__response {
+  margin-top: 10px;
+  padding: 10px 12px;
+  background: #f7f7f5;
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+@media (max-width: 720px) {
+  .lasso-bar {
+    bottom: 72px;
+  }
+}

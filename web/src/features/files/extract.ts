@@ -20,6 +20,7 @@ export interface ExtractedEpub {
   title: string;
   pageCount: number;
   pages: string[];
+  coverDataUrl?: string | null;
 }
 
 export interface ExtractedNote {
@@ -40,10 +41,16 @@ export function stripFileName(name: string): string {
   return name.replace(/\.(pdf|epub|txt|md|markdown)$/i, "");
 }
 
+export function isEpubFile(file: Pick<File, "name" | "type">): boolean {
+  if (file.name.toLowerCase().endsWith(".epub")) return true;
+  const mime = file.type.toLowerCase();
+  return mime === "application/epub+zip" || mime === "application/x-epub+zip";
+}
+
 export async function importMaterialFile(file: File): Promise<ExtractResult> {
   const lower = file.name.toLowerCase();
-  if (lower.endsWith(".pdf")) return extractPDF(file);
-  if (lower.endsWith(".epub")) return extractEPUB(file);
+  if (lower.endsWith(".pdf") || file.type.toLowerCase() === "application/pdf") return extractPDF(file);
+  if (isEpubFile(file)) return extractEPUB(file);
   if (lower.endsWith(".txt") || lower.endsWith(".md") || lower.endsWith(".markdown")) {
     return extractTextFile(file);
   }
@@ -61,7 +68,11 @@ export async function extractPDF(file: File): Promise<ExtractedPdf> {
   const data = new Uint8Array(await file.arrayBuffer());
   let loadingTask;
   try {
-    loadingTask = pdfjsLib.getDocument({ data });
+    loadingTask = pdfjsLib.getDocument({
+      data,
+      disableStream: true,
+      disableAutoFetch: true,
+    });
   } catch {
     throw new Error("Não foi possível abrir o PDF. O arquivo pode estar corrompido.");
   }
@@ -163,6 +174,84 @@ export function opfTitle(opfXml: string): string | null {
   return title.length > 0 ? title : null;
 }
 
+function safeDecodeUri(value: string): string {
+  try {
+    return decodeURI(value);
+  } catch {
+    return value;
+  }
+}
+
+/** Localiza o href da capa no manifest (EPUB3 cover-image ou EPUB2 meta cover). */
+export function findCoverManifestHref(opfXml: string, opfPath: string): string | null {
+  const doc = parseXml(opfXml, "package.opf");
+  const base = opfPath.includes("/") ? opfPath.slice(0, opfPath.lastIndexOf("/") + 1) : "";
+  const manifestById = new Map<string, string>();
+
+  for (const item of doc.querySelectorAll("manifest > item")) {
+    const id = item.getAttribute("id");
+    const href = item.getAttribute("href");
+    if (id !== null && href !== null) manifestById.set(id, href);
+
+    const properties = (item.getAttribute("properties") ?? "").split(/\s+/);
+    if (properties.includes("cover-image") && href !== null) {
+      return resolveZipPath(base, safeDecodeUri(href));
+    }
+  }
+
+  const coverId = doc.querySelector('meta[name="cover"]')?.getAttribute("content") ?? "";
+  if (coverId.length > 0) {
+    const href = manifestById.get(coverId);
+    if (href !== undefined) return resolveZipPath(base, safeDecodeUri(href));
+  }
+
+  return null;
+}
+
+function embeddedImagePayloadLength(src: string): number {
+  const comma = src.indexOf(",");
+  return comma >= 0 ? src.length - comma - 1 : src.length;
+}
+
+/** Escolhe a melhor capa entre capítulos — evita logos pequenos do início do livro. */
+export function pickBestCoverFromChapters(chapters: string[]): string | null {
+  let best: { src: string; score: number } | null = null;
+
+  for (const chapter of chapters) {
+    const doc = new DOMParser().parseFromString(chapter, "text/html");
+    const chapterText = (doc.body.textContent ?? "").replace(/\s+/g, " ").trim();
+    const shortChapter = chapterText.length < 120;
+
+    for (const img of doc.querySelectorAll("img[src]")) {
+      const src = img.getAttribute("src")?.trim() ?? "";
+      if (!/^data:image\//i.test(src)) continue;
+
+      const alt = (img.getAttribute("alt") ?? "").toLowerCase();
+      const cls = (img.getAttribute("class") ?? "").toLowerCase();
+      const hints = `${alt} ${cls}`;
+      let score = 0;
+
+      if (cls.includes("epub-cover") || cls.includes("cover")) score += 120;
+      if (/capa|cover/.test(hints)) score += 90;
+      if (shortChapter) score += 50;
+      if (/logo|livros|watermark|icon|badge|selo/.test(hints)) score -= 120;
+      if (/svg\+xml/i.test(src)) score -= 150;
+
+      const payload = embeddedImagePayloadLength(src);
+      if (payload < 6_000) score -= 80;
+      else if (payload > 18_000) score += 35;
+      else if (payload > 10_000) score += 15;
+
+      if (best === null || score > best.score) {
+        best = { src, score };
+      }
+    }
+  }
+
+  if (best === null || best.score < -40) return null;
+  return best.src;
+}
+
 export async function extractEPUB(file: File): Promise<ExtractedEpub> {
   const { default: JSZip } = await import("jszip");
   let zip;
@@ -185,16 +274,39 @@ export async function extractEPUB(file: File): Promise<ExtractedEpub> {
   const opfXml = await opfEntry.async("string");
   const spine = parseSpine(containerXml, opfXml);
 
+  const zipIndex = buildZipIndex(zip);
+
   const chapters: string[] = [];
   for (const item of spine) {
     if (chapters.length >= MAX_EPUB_CHAPTERS) break;
     if (item.isNav) continue;
-    const entry = zip.file(item.href);
+    const entry = findZipEntry(zipIndex, item.href);
     if (entry === null) continue;
     const raw = await entry.async("string");
-    const text = htmlChapterToText(raw);
-    if (text.length < MIN_EPUB_CHAPTER_CHARS) continue;
-    chapters.push(text);
+    let html = await inlineEpubChapterImages(raw, zipIndex, item.href);
+    html = sanitizeChapterHtml(html);
+    const plainLen = htmlChapterToText(raw).length;
+    const hasImage = /<img\s/i.test(html);
+    const visibleText = html.replace(/<[^>]+>/g, "").trim().length;
+    if (plainLen < MIN_EPUB_CHAPTER_CHARS && visibleText < MIN_EPUB_CHAPTER_CHARS && !hasImage) {
+      continue;
+    }
+    chapters.push(html);
+  }
+
+  if (chapters.length === 0) {
+    // Última tentativa: inclui capítulos curtos (capa, dedicatória, etc.)
+    for (const item of spine) {
+      if (item.isNav) continue;
+      const entry = findZipEntry(zipIndex, item.href);
+      if (entry === null) continue;
+      const raw = await entry.async("string");
+      let html = await inlineEpubChapterImages(raw, zipIndex, item.href);
+      html = sanitizeChapterHtml(html);
+      if (html.replace(/<[^>]+>/g, "").trim().length === 0 && !/<img\s/i.test(html)) continue;
+      chapters.push(html);
+      if (chapters.length >= MAX_EPUB_CHAPTERS) break;
+    }
   }
 
   if (chapters.length === 0) {
@@ -203,11 +315,17 @@ export async function extractEPUB(file: File): Promise<ExtractedEpub> {
     );
   }
 
+  const coverHref = findCoverManifestHref(opfXml, opfPath);
+  const coverFromManifest =
+    coverHref !== null ? await resolveImageDataUrl(coverHref, zipIndex, "") : null;
+  const coverDataUrl = coverFromManifest ?? pickBestCoverFromChapters(chapters);
+
   return {
     kind: "epub",
     title: opfTitle(opfXml) ?? stripFileName(file.name),
     pageCount: chapters.length,
     pages: chapters,
+    coverDataUrl,
   };
 }
 
@@ -234,6 +352,189 @@ export function sanitizeChapterHtml(html: string): string {
       }
     }
   });
+  return doc.body.innerHTML;
+}
+
+/** Capítulos salvos antes da correção de imagens precisam ser reimportados. */
+export function epubChaptersNeedImageInlining(chapters: string[]): boolean {
+  return chapters.some((chapter) => {
+    if (/<img[^>]+src=["'](?!data:)(?!https?:)(?!blob:)/i.test(chapter)) return true;
+    if (/<image[^>]+(?:href|xlink:href)=["'](?!data:)(?!https?:)(?!blob:)/i.test(chapter)) return true;
+    if (/url\(\s*['"]?(?!data:|https?:|blob:)[^'")]+['"]?\s*\)/i.test(chapter)) return true;
+    return false;
+  });
+}
+
+type ZipEntry = import("jszip").JSZipObject;
+type ZipIndex = Map<string, ZipEntry>;
+
+function normalizeZipPath(path: string): string {
+  let decoded = path;
+  try {
+    decoded = decodeURIComponent(path);
+  } catch {
+    decoded = path;
+  }
+  return decoded.replace(/\\/g, "/").replace(/^\/+/, "");
+}
+
+function buildZipIndex(zip: import("jszip")): ZipIndex {
+  const index: ZipIndex = new Map();
+  zip.forEach((relativePath, file) => {
+    if (file.dir) return;
+    const norm = normalizeZipPath(relativePath);
+    index.set(norm, file);
+    index.set(norm.toLowerCase(), file);
+  });
+  return index;
+}
+
+function guessImageMime(path: string): string {
+  const lower = path.toLowerCase();
+  if (lower.endsWith(".png")) return "image/png";
+  if (lower.endsWith(".gif")) return "image/gif";
+  if (lower.endsWith(".webp")) return "image/webp";
+  if (lower.endsWith(".svg")) return "image/svg+xml";
+  return "image/jpeg";
+}
+
+function findZipEntry(index: ZipIndex, path: string): ZipEntry | null {
+  const norm = normalizeZipPath(path.split("#")[0] ?? path);
+  const direct = index.get(norm) ?? index.get(norm.toLowerCase());
+  if (direct !== undefined) return direct;
+
+  const fileName = norm.split("/").pop();
+  if (fileName === undefined || fileName.length === 0) return null;
+
+  const lowerName = fileName.toLowerCase();
+  for (const [key, entry] of index) {
+    if (key.split("/").pop()?.toLowerCase() === lowerName) return entry;
+  }
+  return null;
+}
+
+function chapterBase(chapterHref: string): string {
+  return chapterHref.includes("/") ? chapterHref.slice(0, chapterHref.lastIndexOf("/") + 1) : "";
+}
+
+function isExternalAssetUrl(url: string): boolean {
+  return /^(data:|https?:|blob:|\/\/)/i.test(url.trim());
+}
+
+function firstUrlFromSrcset(srcset: string): string | null {
+  const first = srcset.split(",")[0]?.trim().split(/\s+/)[0]?.trim() ?? "";
+  return first.length > 0 ? first : null;
+}
+
+async function resolveImageDataUrl(
+  href: string,
+  index: ZipIndex,
+  base: string,
+): Promise<string | null> {
+  const clean = href.trim().split("#")[0] ?? "";
+  if (clean.length === 0 || isExternalAssetUrl(clean)) return null;
+
+  const resolved = resolveZipPath(base, clean);
+  const entry = findZipEntry(index, resolved);
+  if (entry === null) return null;
+
+  try {
+    const mime = guessImageMime(resolved);
+    const b64 = await entry.async("base64");
+    return `data:${mime};base64,${b64}`;
+  } catch {
+    return null;
+  }
+}
+
+async function setImageSource(
+  el: Element,
+  href: string,
+  index: ZipIndex,
+  base: string,
+): Promise<boolean> {
+  const dataUrl = await resolveImageDataUrl(href, index, base);
+  if (dataUrl === null) return false;
+  if (el.tagName.toLowerCase() === "img") {
+    el.setAttribute("src", dataUrl);
+    el.removeAttribute("srcset");
+  } else {
+    el.setAttribute("href", dataUrl);
+    el.setAttributeNS("http://www.w3.org/1999/xlink", "href", dataUrl);
+  }
+  return true;
+}
+
+/** Capas via CSS (comum em EPUBs Le Livros) viram <img> antes do sanitize remover <style>. */
+async function promoteCssBackgroundImages(
+  doc: Document,
+  index: ZipIndex,
+  base: string,
+): Promise<void> {
+  if (doc.body.querySelector("img[src]") !== null) return;
+
+  for (const styleEl of doc.querySelectorAll("style")) {
+    const css = styleEl.textContent ?? "";
+    const match = css.match(/url\(\s*['"]?([^'")]+)['"]?\s*\)/i);
+    if (match?.[1] === undefined) continue;
+    const dataUrl = await resolveImageDataUrl(match[1], index, base);
+    if (dataUrl === null) continue;
+    const img = doc.createElement("img");
+    img.setAttribute("src", dataUrl);
+    img.setAttribute("alt", "");
+    img.className = "epub-cover";
+    doc.body.insertBefore(img, doc.body.firstChild);
+    return;
+  }
+
+  for (const el of doc.querySelectorAll("[style]")) {
+    const style = el.getAttribute("style") ?? "";
+    const match = style.match(/url\(\s*['"]?([^'")]+)['"]?\s*\)/i);
+    if (match?.[1] === undefined) continue;
+    const dataUrl = await resolveImageDataUrl(match[1], index, base);
+    if (dataUrl === null) continue;
+    const img = doc.createElement("img");
+    img.setAttribute("src", dataUrl);
+    img.setAttribute("alt", "");
+    img.className = "epub-cover";
+    doc.body.insertBefore(img, doc.body.firstChild);
+    return;
+  }
+}
+
+/** Converte imagens relativas do EPUB em data URLs embutidas. */
+export async function inlineEpubChapterImages(
+  html: string,
+  zipOrIndex: import("jszip") | ZipIndex,
+  chapterHref: string,
+): Promise<string> {
+  const index = zipOrIndex instanceof Map ? zipOrIndex : buildZipIndex(zipOrIndex);
+  const doc = new DOMParser().parseFromString(html, "text/html");
+  const base = chapterBase(chapterHref);
+
+  await promoteCssBackgroundImages(doc, index, base);
+
+  for (const img of doc.querySelectorAll("img")) {
+    const src = img.getAttribute("src")?.trim() ?? "";
+    const srcset = img.getAttribute("srcset")?.trim() ?? "";
+    const candidate = src.length > 0 ? src : (firstUrlFromSrcset(srcset) ?? "");
+    if (candidate.length === 0 || isExternalAssetUrl(candidate)) continue;
+
+    const ok = await setImageSource(img, candidate, index, base);
+    if (!ok && src.length > 0) img.remove();
+  }
+
+  for (const image of doc.querySelectorAll("image")) {
+    const href =
+      image.getAttribute("href")?.trim() ??
+      image.getAttributeNS("http://www.w3.org/1999/xlink", "href")?.trim() ??
+      image.getAttribute("xlink:href")?.trim() ??
+      "";
+    if (href.length === 0 || isExternalAssetUrl(href)) continue;
+    const ok = await setImageSource(image, href, index, base);
+    if (!ok) image.remove();
+  }
+
   return doc.body.innerHTML;
 }
 
